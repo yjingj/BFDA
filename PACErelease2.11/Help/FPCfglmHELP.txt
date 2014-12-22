@@ -1,0 +1,128 @@
+============
+Description:
+============
+
+  This is the main function to perform Functional Principal Component Analysis
+  for generalized logitudinal observations. The non-Gaussian observations Y, 
+  which are repeatedly collected for a sample of individuals over time are
+  modeled with latent Gaussian processes X.
+
+Includes the following steps:
+
+1) Estimation of the mean function for Y and X
+
+2) Estimation of the covariance functions for Y and X
+
+3) Calculation of the number of selected components and the overdispersion parameter
+
+4) Computing the smoothed individual trajectories for X and Y
+
+========
+Usage:
+========
+
+    [yy] = FPCfglm(y,t,p)
+
+======
+Input: 
+======
+     y:    1*n cell array, y{i} is the vector of non-Gaussian observations for the ith subject, i=1,...,n.
+     t:    1*n cell array, t{i} is the vector of time points for the ith subject on which
+           corresponding observations y{i} are taken, i=1,...,n.
+     p:    a struct obtained from setOptions.m sets the rest of arguments for PCAfglm.m
+           ex:
+           >> p = setOptions();
+           type 'names(p)' to see the option names included in p.
+           Most of the options are similar to those used in FPCA.m; please refer to the help file of PAC.m.
+           Special options for FPCfglm.m:
+               family: a character string naming the distribution of the repeated observations.
+                       Accepted families include: 'binomial', 'poisson'.
+               param:  parameter in the designated family. default is [] (no estra parameter needed).
+
+=======
+Output:  
+=======  
+    yy:    a cell array that contains the following values:
+               no_opt:   integer, automatically or subjectively selected
+                         value of K, the number of selected components.
+
+               sigma:    scalar, estimate of overdispersion parameter.
+
+               xlambda:  1*K vector, estimated eigenvalues of latent Gaussian process X
+                         (variances of functional principal components scores).
+
+               xphi:     N*K matrix, estimated principal component
+                         functions for latent Gaussian process X,
+                         valued at distinct input time points with ascending
+                         order of all subjects, corresponding to out1.
+
+               xeigen:   ngrid*K matrix, estimated principal component functions 
+                         for latent Gaussian process X,
+                         valued at out21, ngrid of the pooled distinct time points
+                         with ascending order of all subjects,
+                         xphi is an interpolated version of xeigen at out1.
+
+               xi_est:   n*K matrix, predictions for random coeffecients (PC
+                         scores) for n subjects.
+
+               ymu:       1*N vector, estimated mean functions for observed non-Gaussian process Y,
+                          valued at distinct input time points (newdata = []), in ascending order from
+                          all subjects, corresponding to out1; when newdata is defined,
+                          corresponds to the time points from newdata, same as out1.
+
+               xmu:       1*N vector, estimated mean functions for latent Gaussian process X,
+                          valued at distinct input time points (newdata = []), in ascending order from
+                          all subjects, corresponding to out1; when newdata is defined,
+                          corresponds to the time points from newdata, same as out1.
+
+               bw_mu:     scalar(>0), automatically or subjectively selected
+                          bandwidth for smoothing mean curve.
+
+               ycov:      ngrid*ngrid matrix, smoothed covariance surface for observed non-Gaussian 
+                          process Y,corresponding to out21.
+
+               xcov:      ngrid*ngrid matrix, smoothed covariance surface for latent Gaussian process X,
+                          corresponding to out21.
+
+               bw_cov:    1*2 vector(>0), automatically or subjectively selected
+                          bandwidths for smoothing covariance surface.
+
+               xcovfit:   ngrid * ngrid matrix, fitted covariance surface for latent Gaussian process X, 
+                          based on truncated estimate of eigenvalues ("xlambda") and
+                          principal component functions ("xeigen"), corresponding to out21.
+                          
+               AIC:      1*maxk vector, AIC values obtained when choosing K from
+                         K=1 to K=maxk, where AIC(K) is the minimum. If AIC
+                         method is not applied, it is [].
+
+               BIC:      1*maxk vector, BIC values obtained when choosing K from
+                         K=1 to K=maxk, where BIC(K) is the minimum. If BIC
+                         method is not applied, it is [].
+
+               FVE:      1*ngrid vector of fraction of variance explained.
+
+               x_pred:   1*n cell array, x_pred{i} is the vector of predictions for
+                         the latent Gaussian process X for the ith subject,
+                         evaluated at time points from the output grid vector "out1".
+
+               y_pred:   1*n cell array, y_pred{i} is the vector of predictions for
+                         the observed non-Gaussian process Y for the ith subject,
+                         evaluated at time points from the output grid vector "out1".
+
+            x_predOrig:  1*n cell array, x_predOrig{i} is the vector of predictions
+                         for the latent Gaussian process X for the ith subject,
+                         evaluated at the same time points as the input.
+
+            y_predOrig:  1*n cell array, y_predOrig{i} is the vector of predictions
+                         for the observed non-Gaussian process Y for the ith subject,
+                         evaluated at the same time points as the input.
+
+               out1:     1*N vector, distinct input time points with ascending
+                         order from all subjects if p.newdata = []; otherwise, it
+                         is the same as p.newdata.
+
+               out21:    1*ngrid vector, a grid of time points for which the
+                         smoothed covariance surface assumes values, i.e.,
+                         ngrids from out1.
+
+  To see an example, check with exampleFglm.m

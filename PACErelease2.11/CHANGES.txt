@@ -1,0 +1,385 @@
+==========================
+New in PACE version 2.11:
+==========================
+(1) A new package PACE-QuadReg performs Functional Quadratic Regression, where the predictor is a function X(t_x) and the response Y is a scalar.
+Reference: Yao, F. and M\"uller, H.G. (2010). Functional Quadratic Regression. Biometrika 
+
+(2) A new input 'xcov' for PCA.m has been added to allow users to specify their own covariance surface.
+
+(3) A new package PACE-DYN calculates transfer functions and cross-relationships for Gaussian processes.
+Reference: M\"uller, H.G. and Yang, W. (2010). Dynamic relations for sparsely sampled Gaussian processes. TEST. 
+
+(4) The PACE-REG package is enhanced with the pointwise confidence interval for the reponse functions Y.
+Reference: Yao, F., M\"uller, H.G., Wang, J.L. (2005). Functional Linear Regression Analysis for Longitudinal Data.   The Annals of Statistics 33, 2873-2903.
+
+==========================
+New in PACE version 2.10:
+==========================
+(1) For FPCA.m (base PACE), the default kernel choice for regular = 2 (regular and dense design data) is now changed from "gauss" to "epan" to speed up computational time.
+ 
+(2) New non-randomized truncation threshold, "rho", for the iterative residual that is used in the estimation of FPC scores is implemented. 
+   When "rho" = 'cv-random'
+   'cv-random':  use randomized leave-one-measurement-out CV approach to find the optimal value of rho.
+   Note that this choice contains a random element and therefore the analysis is not exactly
+   replicable when running the program twice. This option is no longer the default setting for "rho". 
+
+   'cv': use non-randomized leave-one-measurement-out CV approach to find the optimal value of rho. [default]
+
+    Let R_i be the remainder term of (1000+i)/ni, where i = 1,...,n subjects and ni is the number of repeated measurements for the i-th subject. The measurement to be left-out
+    is then indexed by R_i+1. 
+
+(3) A new package  PACE-FVP/ was added to implement the Functional Variance Process (FVP). 
+    See reference:  M\"uller, H.G., Stadtm\"uller, U., Yao, F. (2006). Functional variance processes. Journal of the American Statistical Association 101, 1007-1018.
+    Also see example_FVP under examples/ .
+
+(4) New input option for PCA() or FPCA(), corrPlot. When corrPlot = 1, it creates a plot of the correlation surface for the data.
+    A new plotting function "createCorrPlot.m" was added, which creates a plot of the correlation surface based on the results from FPCA() or FPCder(). 
+
+(5) New default for input option 'regular'.  When regular=[] (new default), the program determines the data design based on the structure of input t.
+
+
+==========================
+New in PACE version 2.9:
+==========================
+(1) A new function FPCfam.m was added to implement the functional additive model (FAM, see M\"{u}ller, H.G., Yao, F. (2008). Functional additive models. J. American Statistical Association 103,  1534-1544.) This model is (intended) primarily for densely sampled functional data. Example for FPCfam: exampleFam.m 
+
+(2) For functional linear regression with scalar responses Y, the package PACE-REG only deals with continuous responses Y. For generalized response Y (for example, binomial or Poisson), it is recommended to use the newly added package PACE-GFLM (which allows for known or unknown link function).
+
+(3) In the case of a functional response, the output 'fitted_y' in FPCreg is now provided on the grid 'out1', which is the same grid for which output for the mean function and 
+eigenfunctions of the response Y is provided (Previously, the output grid corresponded to the time grid at which observations of Y are available).
+
+(4) A new function spadis has been added to compute pairwise distances for sparsely observed functional trajectories. These distances are the estimated conditional expectations of L2 distance, conditional on the observed data (see Peng, J., M\"{u}ller, H.G. (2008). Distance-based clustering of sparsely observed stochastic processes, with applications to online auctions.
+Annals of Applied Statistics 2, 1056--1077). This distance can be used for cluster analysis of functional data.
+
+(5) A new package  PACE-GFLM/ was added to implement Generalized Functional Linear Regression (GFLM). The response variable is a scalar (with generalized distribution) and the predictor is a functional trajectory. The algorithm is based on Chiou and M\"uller (1998), M\"uller and Stadtm\"uller (2005)
+and M\"uller (2005). Link and variance functions can be specified or left unspecified. See example_GFLM under examples/ .
+
+(6) The function WFPCA for pairwise warping (Tang, R., M\"{u}ller, H.G. (2008). Pairwise curve synchronization for functional data. Biometrika 95, 875-889) now is implemented in such a way that the procedure can also be applied to irregular (or sparse) data, by first imputing trajectories with PACE. The default value of the penalty parameter has been changed. A new method has been implemented to choose the warping penalty parameter based on the data. 
+
+(7) A new plot function "createSpaghettiPlot.m" has been added. This function creates a Spaghetti plot from a data set for initial visual inspection and exploration of functional data.
+
+
+==========================
+New in PACE version 2.8:
+==========================
+1) The following functions are modified for more flexible 
+   bandwidth selections: mullwlsn.m, gcv_lwls.m, gcv_mullwlsn.m, 
+   PCA.m under PACE/ mullwlskDer.m, gcv_mullwlsnDer.m and PCder.m 
+   under PACE/PACE-DER/
+
+2) The following two functions are modified mullwlsn.m and mullwlsnDer.m
+   to speed up computation time: in the estimation of the discretized covariance 
+   function, only the upper triangular (including diagonal elements) of 
+   the covariance matrix are calculated.  
+
+3) mullwlskDer.m is modified for bug fixing. The original code fits the 
+   partial derivative of the covariance function using npoly = nder, and 
+   now, it is changed to npoly = nder+1, where npoly is the degree of 
+   polynomial and nder is the order of derivative. 
+
+4) Add getDynamic.m under PACE/PACE-DER/ for calculation of dynamic 
+   transfer function when nder = 1. 
+
+5) Add a new package under PACE-WFPCA/ for densly sampled functional data to
+   implement time-warping. The algorithm is based on pairwise warping method by 
+   Tang and M\"uller, 2008. The main function is WFPCA.m. See example_WFPCA 
+   under examples/ for its usage.
+
+==========================
+New in PACE version 2.7:
+==========================
+1) The output value "y_pred" in PCA.m is modified from n*1 to 1*n cell array.
+   Typo in FPCA.m function description is fixed.
+   Function getRawCov.m is modifed for special case of regular with missing 
+   data. More specifically, it is the case when entries in the raw cross-sectional 
+   covariance do not exist and should be removed before entering into 2D smoothing.
+  
+2) FPCreg.m has two new input arguments 'family' and 'link' to specify the distribution
+   of response Y and the corresponding link function, when Y is a SCALAR.
+   Valid options include:
+              family          link
+             'normal'        'identity'(default)
+             'binomial'      'logit'(default),'probit','comploglog'
+             'poisson'       'log'(default)
+   See exampleReg_glm.m under examples/. for fitting generalized linear regression
+   when response Y is a discrete scalar. See M\"uller, H.G., Stadtm\"uller, U. (2005).
+   Generalized functional linear models. Annals of Statistics 33, 774-805. 
+
+3) Functional Principal Component Analysis for generalized (non-Gaussian) repeated
+   measurements (GRM) is now available under PACE-GRM/. The main function is FPCgrm.m. See 
+   example_grm.m under examples/ for the usage. See Hall, P., M\"uller, H.G., Yao, F. (2008).
+   Modeling sparse generalized longitudinal observations with latent Gaussian process.
+   Journal of the Royal Statistical Society B.
+
+4) Add new options in setOptions.m: 'family' and 'param'. They are used to specify the
+   distribution of the non-Gaussian observations in PACE-FGLM/.
+   NOTE: The option 'family' in setOptions.m is different from the input argument 'family' in FPCreg.m.
+         The option 'family' in setOptions.m is only used in FPCfglm.m.
+
+==========================
+New in PACE version 2.6.2:
+==========================
+The following functions are modified for bug fixing:
+PCA.m (a warning message is modified), PCder.m (a warning message is modified), 
+cv_mullwlsn.m (for regular = 1 or 2) and getEigens.m. 
+
+==========================
+New in PACE version 2.6.1:
+==========================
+1) The following functions are modified for bug fixing:
+   binData.m, gcv_lwls.m, getRawCov, cv_mullwlsn.m, gcv_mullwlsn.m, 
+   PCA.m, under PACE/, gcv_mullwlsnDer.m and PCder.m under PACE-DER/.
+
+2) Default value of "selection_k" in PCder.m is changed from BIC1 
+   to FVE. However, if a user wants to use FPCder for fitting the trajectory 
+   itself only, it is recommended to set the "selection_k" to "BIC1".    
+
+3) lwls.m is modified to allow repeated output grids.
+
+4) Add new input argument 'verbose' in PCA.m and PCder.m. The default 
+   value of 'verbose' is set to be 'on' for printing diagnostic messages.
+
+5) Hypothesis testing for the significance of a linear regression relationship 
+   is conducted through the quasi R-square statistic Q: Q=0 (previously through 
+   the functional R-square statistic).  Please refer to the help file of FPCreg.m 
+   for the definition of Q.  
+   The hypothesis testing is not a default option in FPCreg.m. Please use function Rtest.m
+   to perform this test.
+
+========================
+New in PACE version 2.6:
+========================
+
+1)  Derivative estimation for functional data through PACE is now available under PACE-DER/.
+    For examples, see exampleDer.m under examples/. The main function for derivative
+    estimation (including the estimation of the original curve) is FPCder.m. For 
+    prediction of trajectories and derivatives for new observed subjects, use FPCderPred() 
+    (see exampleDer.m for more details).
+
+2)  getEigens.m under PACE/ is modified for sign consistency between "eigen" and "phi".
+
+3)  Add FPCApred.m under PACE/ for prediction for new subjects.
+    example.m has been modified to reflect the new feature. 
+
+4)  Unused old functions were removed from PACE/. Many functions under PACE/ are 
+    modified so that they can be used by functions from PACE/ or PACE-DER/.
+
+5)  Add new plotting function "KModeVariationPlot.m", which creates a plot of the mode of
+    variation for the k-th functional principal component, based on the results from FPCA() 
+    or FPCder(), for k >= 1.
+    Add new plotting function "createScreePlot.m", which creates a scree plot based on the
+    results from FPCA() or FPCder(). 
+
+6)  When targeting eigenvalue estimation, it is recommended to use smaller bandwidths for
+    the smooth covariance surface estimation than the GCV bandwidth.
+
+7)  predict.m under FPC-REG/ is modified to be consistent with the new score estimation.
+
+8)  New input "FIT" is added to FPCreg.m. It can take two values:
+
+         FIT =  0:  Fitting a functional linear regression (default) through decomposition into 
+                    simple linear regression between the FPC socres of Y and X.
+
+         FIT = -1:  Predicting with a functional linear regression
+                    between Y and the FPC scores of X, using weighted
+                    least squares with the covariance surface of Y as
+                    weight matrix.
+
+     NOTE:  the option FIT = -1 is aiming at optimal prediction for sparsely observed 
+            functional response (i.e. Y is sparse and functional), not necessarily to obtain
+            a good beta (regression parameter function) surface. The default option is FIT = 0. 
+            If one is interested  in estimating the BETA surface, FIT = 0 with 'BIC1' (for 
+            'selection_k' in param_X) should be used instead.
+
+9)  When FIT = 0, 'AIC_R' selects the numbers of principal components for X 
+    and Y jointly by the regression AIC criterion.
+
+10) New output "p" is added in function FPCreg.m. It is a 1x2 vector including:
+       rej: 1 = reject the null hypothesis of r2 = 0; 0 = do not reject.
+        pv: P-value of null hypothesis r2 = 0, testing for overall significance of
+            the regression relation.
+    This bootstrap p-value is based on resampling from the estimated functional principal
+    scores (this method is fast, but does not reflect the variability in estimating the FPC
+    scores). For a more accurate bootstrap method, based on bootstrapping by resampling from 
+    the original subject data, use FPCdiag.m with boostrap = 'pre' option.
+
+11) In case of FIT = -1, the estimated beta surface and the bootstrap p-value are not calculated, i.e.
+     the output BETA and p in FPCreg.m are [].
+     The diagnostics of the fitted functional linear regression model is available only for the case FIT = 0.
+
+12) Functional singular component analysis is available under PACE-SVD/ through FSVD.m. 
+    For examples, see examplesvd.m under examples/.
+
+========================
+New in PACE version 2.5:
+========================
+
+1) The following default values are changed in PCA.m:
+
+    selection_k = 'BIC1'
+    kernel = 'gauss'
+    maxk = 20
+
+2) When using Gaussian kernels, the optimal GCV bandwidths for mean and covariance 
+   functions are multiplied by 1.1.
+
+3) Stabilizing the estimation of the error variance by a truncation algorithm (see FPCscore.pdf under Help/)
+
+    New input argument, rho, is added in PCA.m
+    New output values, rho_opt and sigmanew are added in PCA.m 
+    Input argument "cut" is removed from PCA.m
+
+4) *new* Functional diagnostic function FPCdiag.m.
+    Functional residual plots;
+    Functional leverage plot;
+    Functional Cook's distance;
+    Bootstrap test for significance of functional regression for null hypothesis R2=0;
+    Construction of confidence bands for regression parameter function/surface  beta.
+
+5) For functional regression: The default method to select the number of principal 
+   components of the response is 'BIC1'.
+
+   The default method to select the number of principal components of the predictor 
+   is 'AIC_R'. This method focuses on the prediction of new subjects.
+
+   If the main interest is to estimate the regression parameter function/surface, 
+   then the suggested method (for predictor) is 'BIC1'.
+
+
+========================
+New in PACE version 2.4:
+========================
+
+1) To ensure the estimated smoothed covariance surface is symmetric in the 
+face of small perturbations or round-off errors, we transform the smoothed 
+covariance by
+     (xcov + xcov')/2.
+
+2) Addition of the getCB.m function to get confidence bands for regression 
+function Beta.
+
+3) Addition of the getDiag.m function to get residual plots for principal 
+components scores, leverage plot and Cook's distance plot.
+
+4) Addition of the Rtest.m function to conduct a bootstrap hypothesis test 
+of functional regression relation via R-square r2=0.
+
+5) Instead of AIC_R, Fraction of Variation Explained (FVE) is the default 
+for selection of number of principal components of the predictor.
+
+6) Cross-covariance is not used any more for functional regression 
+implementation
+  and therefore removed from the output.
+
+7) Updated examples to reflect the changes.
+
+========================
+New in PACE Version 2.3:
+========================
+
+1) When method = 'IN', the integration method has been changed to the 
+   Trapezoidal rule (replacing the Romberg method).
+
+2) Instead of using singular value decomposition for the estimation of 
+   eigenvalues and eigenfunction as in previous versions, the program now 
+   uses eigendecomposition. Negative or zero eigenvalues (as well as the 
+   corresponding eigenvectors) are removed, ie, only the sequence of strictly 
+   positive eigenvalues and their eigenfunctions is retained.    
+
+   If the estimated eigenvalues contain imaginary numbers, this implies the 
+   estimated auto-covariance function is not symmetric, the program will stop 
+   and an error message will be generated.
+
+3) For the functional linear regression implementation, only one method is 
+   kept to estimate the beta function: using simple linear regressions of 
+   response process components  pc_y on predictor process components pc_x. 
+   Thus there is no need to specify 
+   method_beta any more.
+
+4) In the regression part PACE-REG, the default method (when the user 
+   enters [] for param_Y) of choosing the number of principal components 
+   for response Y has been changed to 'BIC1'. (In PACE, it is 'FVE'). For 
+   predictor X, the default method is now 'AIC_R', which uses the regression 
+   AIC criterion to choose the number of principal components. 
+   This method chooses the components of X based on the linear relationship 
+   between X and Y, rather than on properties of X itself. Previous methods 
+   (BIC1, FVE,...) can still be used to choose the number of predictor
+   components for X.
+
+5) In previous versions, the smoothed cross-covariance was a default output 
+   if the integration method was used to estimate the beta function from the 
+   cross-covariance function. While this integration method has been deleted, 
+   the cross-covariance is still available as an output.
+   When the input bwxccov = NaN, the cross-covariance is not calculated or 
+   smoothed.
+
+========================
+New in PACE Version 2.2:
+========================
+
+1) Instead of using Riemann sums, the trapezoidal rule is used to integrate 
+   and normalize the estimated eigenfunctions.
+
+2) New input option for PCA() or FPCA(), designPlot. When designPlot = 1, it creates a 
+   design plot for the data. This plot serves as a diagnostic tool for determining whether to 
+   use the PACE method to fit the data. By default, designPlot = 0 (no design plot).
+
+========================
+New in PACE Version 2.1:
+========================
+
+1) The "regular" option now takes value 0, 1 or 2.
+   i)  regular = 0: sparse and irregular data
+   ii) regular = 1: regular data with missing values  (NEW)
+   iii) regular = 2: completely regular data, no missings               
+
+   For regular data with missing values, this new option will run much faster.
+
+2) There is now an option ("numBins") that allows to perform prebinning before the analysis. This
+   will be particularly useful for large data sets. The data that fall in each bin will be
+   averaged and the mid point of the bin becomes the corresponding time point (or predictor coordinate). 
+   After binning, initially irregular data with "regular = 0" will be analyzed as regular
+   data with missings, that is, "regular" will be reset to 1. 
+
+      When numBins = 0, no binning will be performed.
+      When numBins = 10, the data will be prebinned with number of bins chosen as numBins.
+      When numBins = [], default binning will be implemented:
+              
+        If regular = 1 or 2, m = max of ni, if regular = 0, m = median of ni.
+        No binning occurs if  n = 5000 and m = 400 or m = 20.
+        If n = 5000 and m > 400, bin with numBins = 400.
+        If n > 5000, compute
+           m* = max(20, (5000-n)*19/2250+400)
+           if m > m*, bin with numBins = m*,
+           if m = m*, no binning occurs.
+
+3) Bandwidth candidates for the CV method (bandwidths for the mean or covariance function) 
+   are redefined.
+ 
+4) Search for optimal GCV bandwidths for the mean and covariance functions is extended if
+   the best bandwidth choice within a first array of bandwidths occurs at the largest 
+   of the 10 candidate bandwidths.
+
+5) When the estimated sigma2 is negative, it is reset to 0.
+
+   When the variance-covariance matrix for the function is numerically singular if 
+   selection_k = 'AIC1' or 'BIC1', selection_k will be re-set to 'FVE'.
+
+6) A new function FPCAeval.m allows to perform prediction for 
+   subjects at pre-set times based on the results from FPCA.m. 
+
+7) Internal functions have been reorganized or recoded, so this version is about
+   30% ~ 50% time faster than release 2.0.
+
+8) The calculation of the functional regression prediction for completely balanced data is faster.
+
+9) Prediction R2 is replaced by Quasi R2, denoted as Q, from FPCreg.m output.
+               
+      - If the response Y is a scalar:
+
+        Q = 1-sum((Yi-Yhati)2)/sum((Yi-mean(Y))2)
+  
+      - If Y is a function,
+ 
+        Q = 1-sum((Yi-Yhati)'*(Yi- Yhati)/ni)/sum((Yi-mean(Y))'*(Yi-mean(Y))/ni)
+

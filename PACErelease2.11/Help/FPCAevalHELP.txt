@@ -1,0 +1,44 @@
+This function performs functional evaluation for the existing subjects
+based on the FPCA() function call.
+ 
+ypred=FPCAeval(yy, subjectID, newt)
+=======
+ Input:
+=======
+  yy: an aggregated object, returned from FPCA().
+
+  subjectID: a 1*m (m <= n) row vector, denotes the subject ID
+             to be predicted.
+             if set to [], then subjectID = 1:n
+
+  newt:  i) a 1*mm row vector of new time points for all subjects
+            defined in subject ID,
+           e.g., if subjectID = 1:3, request return of the predicted 
+           measurements for the first three subjects, evaluated
+           at the same time points at newt.
+         ii) a 1*mm cell array of new time points, where newt{1}
+             denotes the time points for the subject whose ID is
+             subjectID(1). This allows different subjects to be
+             evaluated at different new time points. 
+========
+ Output:
+======== 
+   
+    ypred: 1*m cell array of the predicted measurements corresponding
+          to new time points defined in newt.
+
+  example:
+
+  yy = FPCA(y,t,p);
+  subjectID = [1 2 6];
+  newt = 0.1:0.1:0.5;
+  ypred = FPCAeval(yy,subjectID, newt);  %predict subect 1,2,6 at
+                                         %the same time points
+  or
+  subjectID = [1 2 6];
+  newt = {[0.1 0.2], [0.3 0.4 0.5], [0.6 0.8 1]};
+  ypred = FPCAeval(yy,subjectID,newt)    %predict subject 1,2,6 at
+                                         %different time points
+                                          
+ See also FPCA, PCA
+   

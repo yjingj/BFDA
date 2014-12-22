@@ -1,0 +1,26 @@
+function [ypred, xi_new, xi_var] =  FPCApred(yy, newy, newt, regular)
+
+This function performs prediction for new y and newt based on the returned
+fits from FPCA(). Unlike FPCAeval, which is for the currently included subjects only,
+FPCApred works for both new and currently included subjects.
+ 
+Input yy:        an object that is returned by FPCA().
+Input newy:      1*m cell array of new measurements for new subjects
+Input newt:      1*m cell array of new time points for new subjects
+                 if all new subjects are evaluated at the same time,
+                 newt can be a row vector of time points for one subject
+Input regular:   0,1,2 (see PCA() for more details), if in doubts, set regular = 0
+                 if not specified, then, the program uses the same 'regular' as specified in 'p'.
+Output ypred:    1*m predicted measurements for new subjects
+Output xi_new:   m x K matrix of new estimated FPC scores
+Output xi_var:   K*K matrix, Var(PC score)-Var(estimated PC score). The
+                 omega matrix in equation (7) of the paper, which is used
+                 to construct the point-wise C.I. for X_i(t)
+ example:
+ p = setOptions();
+ yy = FPCA(y,t,p);
+ newy = {[1 2 3],4, [9 10]};
+ newt = {[0.1 0.5 0.8], 1.1, [0.5 0.9]};
+ [ypred, xi_new,xi_var] = FPCApred(yy,newy,newt); %use 'regular' defined in p
+
+  see also FPCA, FPCAeval

@@ -1,0 +1,18 @@
+function KModeVariationPlot(yy)
+
+This function creates the k-th mode of variation plot based on the
+results from FPCA() or FPCder().
+
+Input yy : returned object from FPCA() or FPCder().
+Input k  : a positive integer (<= no_opt from FPCA(), or FPCder()) 
+           that specifies the k-th mode of variation plot that is 
+           of interest 
+           k can also be a row vector for multiple plots.
+           If missing, then, k = 1:no_opt
+example:
+ yy = FPCA(y,t,p);
+ KModeVariationPlot(yy)  %k-th mode variation plots for all k from 1 to no_opt
+ or 
+ p = setDerOptions('nder',0:2);
+ yy = FPCder(y,t,p);
+ KModeVariationPlot(yy,1) %k-th mode variation plot for k = 1

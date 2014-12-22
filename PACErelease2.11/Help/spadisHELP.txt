@@ -1,0 +1,45 @@
+===========
+Description:
+===========
+
+           This function is used to compute pairwise distances for
+           sparsely observed functional trajectories. The output
+           distance is the estimated conditional expection of the L2
+           distance on observed data.
+
+
+           References: Yao, F., M\"{u}ller, H.G., Wang, J.L. (2005). Functional
+           data analysis for sparse longitudinal data.  J. American
+           Statistical Association 100, 577--590.
+           Peng, J., M\"{u}ller, H.G. (2008). Distance-based clustering of sparsely
+           observed stochastic processes, with applications to online auctions.
+           Annals of Applied Statistics 2, 1056--1077.
+
+ 
+======
+Usage:
+======
+
+function [D1,D2,Y] = spadis(X)
+
+======
+Input: 
+======
+     X:          a cell array containing the original data or the output
+                 of FPCA; if the original data are given, X{1} should be
+                 y, X{2} should be t and X{3} should be p as in the FPCA
+                 function; if user already used PACE, X should be a cell
+                 array containing all the outputs of the FPCA function.
+
+=======
+Output:  
+=======  
+     D1:         n*n matrix where D1(i,j) is the estimated
+                 conditional expection of the L2 distance between subject
+                 i and j.  
+     D2:         n*n matrix where D2(i,j) is the Euclidean distance
+                 between estimated functional principal component socres
+                 of subject i and j.  
+     Y:          a cell array available when the original data are
+                 given, recording the output of PACE from the FPACE
+                 function.

@@ -1,0 +1,120 @@
+===========
+Description:
+===========
+
+            This program is intended for generalized functional linear regression
+            (GFLM) with known or unknown link and variance functions. The
+            response variable must be a scalar and the predictor is a
+            random trajectory. The predictor trajectories may be measured
+            at irregular times and measurements may be contaminated with
+            noise, in which case PACE will be applied as a preliminary
+            step. Users have the option to specify both the link function and the variance
+            function from a variety of choices provided in the
+            algorithm or to leave either of these functions unspecified. The algorithm
+            uses the Iteratively Weighted Least Squares Method (IWLS) and 
+            SemiParametric Quasi-likelihood Regression (SPQR)
+            See Chiou and M\"uller (2004), M\"uller and Stadtm\"uller
+            (2005) and M\"uller (2005) for details.
+
+            References: Chiou, J.M., M\"{u}ller, H.G. (2004).  Quasi-likelihood
+            regression with multiple indices and smooth link and variance
+            functions. Scandinavian J. Statistics 31, 367--386.
+            M\"{u}ller, H.G., Stadtm\"uller, U. (2005). Generalized
+            functional linear models. Annals of Statistics 33, 774--805.
+            M\"{u}ller, H.G. (2005). Functional modelling and
+            classification of longitudinal data. Scandinavian J. 
+            Statistics 32, 223--240.
+
+  
+======
+Usage:
+======
+
+ function [eta,mu,der,sigma2,beta,alpha,tgrid,vbeta,dis,optbw,ggrid,gfct,vgrid,vfct] = iterGFLM(Y,X,T,kernel,bw,datatyp,linktyp,vartyp,theta,fig,pace)
+
+======
+Input: 
+======
+      Y:          1*n vector where Y(i) is the response variable for the
+                  ith subject.
+      X:          n*m matrix or 1*n cell array where X(i,:) 
+                  or X{i} is the predictor for the ith subject.
+      T:          1*m vector or 1*n cell array giving the time
+                  points; if predictors are regular functional
+                  trajectories (X is a matrix), a 1*m vector of the time
+                  points for all subjects; if predictors are irregular
+                  functional trajectories (X is a cell array), a 1*n cell
+                  array where T{i} is the time points for the ith subject.
+      kernel:     kernel function to be used for smoothing link and
+                  variance functions
+                  'epan' - Epanechnikov: 0.75*(1-x^2) on [-1,1] 
+                  'rect' - rectangle:    0.5 on [-1,1]
+                  'gauss'- Gaussian:     exp(-x^2/2)/sqrt(2*pi) on [-4,4]
+                  Default is 'epan'.
+      bw:         a vector of length 3, if specified, will give the bandwidth for smoothing the link function,
+                  the derivative of link function and the variance
+                  function respectively. 
+                  GCV will be used if left unspecified.
+      datatyp:    an integer indicating the type of the predictor.
+                  0 - sparse (or irregular) functional data    
+                  1 - regular data with missing values
+                  2 - completely balanced (regular) data
+                  Default is 0.
+      linktyp:    an integer indicating the type of link function.
+                  0 - unknown; 1 - identity; 2 - power 2; 3 - log; 4 -
+                  logit; 5 - cloglog; 6 - inverse; 7 - sqrt.
+                  Default is 0.
+      vartyp:     an integer indicating the variance function.
+                  0 - unknown; 1 - constant; 2 - binomial; 3 - poisson; 4
+                  - gamma.
+                  Default is 0.
+      theta:      a vector of length n needed only if vartyp is 2 or 4;
+                  theta(i) gives the sample size ni for the ith subject
+                  from binomial B(ni,pi) or gamma G(ni,lambdai)
+                  distribution.
+      fig:        an integer indicating whether the link and variance
+                  functions should be plotted; 0 - no, 1 - yes
+                  Default is 1.
+      pace:       a structure array obtained from setOptions.m that sets parameters for
+                  PACE. Use [] for default choices.
+
+=======
+Output:  
+=======  
+      eta:       1*n vector where eta(i) is the estimated f(E(Y|mu)) for
+                 the ith subject (here f is the link function). 
+      mu:        1*n vector where mu(i) is the estimated g(eta) (g=f^{-1})
+                 for the ith subject.
+      der:       1*n vector where der(i) is the estimated g'(eta) for the
+                 ith subject.
+      sigma2:    1*n vector where sigma2(i) is the estimated var(Y|mu) for
+                 the ith subject.
+      beta:      a vector giving the regression parameter function,
+                 i.e. eta(i)=alpha+\int beta*X{i} where alpha is the
+                 estimated intercept; if predictors are regular functions
+                 (T is a vector), beta is a 1*m vector evaluated at time
+                 grid T, if predictors are irregularly measured functional
+                 trajectories (T is a 1*n cell array), beta is a 1*100
+                 vector giving the regression function evaluated at time
+                 grid tgrid where tgrid is explained below.
+      alpha:     the estimated intercept (0 if link function is unknown).
+      tgrid:     a 1*m or 1*100 vector giving the evaluated time points
+                 for the estimated regression parameter function beta; if
+                 predictors are regular functional trajectories, tgrid is the same
+                 as T; if predictors are irregular functional
+                 trajectories, tgrid is a 1*100 vector equally spaced in the range
+                 of pooled time points of all trajectories.  
+      vbeta:     covariance matrix of beta; if link function is known, this
+                 is the covariance matrix of [alpha,beta].
+      dis:       the estimated Pearson overdispersion parameter (1 if link
+                 function is unknown).
+      optbw:     1*3 vector giving the final bandwidths for smoothing the
+                 link function, the derivative of link function and the
+                 variance function from generalized cross-validation (GCV); 
+                 NaN if the corresponding function is known. 
+      ggrid:     1*100 vector giving a dense time grid for gfct.
+      gfct:      1*100 vector giving the evaluated link function on time
+                 grid ggrid.
+      vgrid:     1*100 vector giving a dense time grid for vfct.
+      vfct:      1*100 vector giving the evaluated variance function on time
+                 grid vgrid.

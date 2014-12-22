@@ -1,0 +1,16 @@
+function newy = FPCpred(res, xx, yy, newx, new_tx, y, new_ty)
+======
+Input:
+======
+  res, xx, yy:  The returned values from FPCreg. See FPCreg() for more details.
+  newx:   1*numNewSub cell array contains measurements for new x functions
+  new_tx: 1*numNewSub cell array contains time points corresponding to the newx
+  y:      the scalar response Y vector used for estimation 
+          Only needed when Y is a scalar.
+  new_ty: 1*numNewSub cell array contains time points.
+
+=======
+Output:
+=======
+  newy:   1*numNewSub cell array contains predicted measurements for the
+          corresponding newx and new_ty
