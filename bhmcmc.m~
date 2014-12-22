@@ -228,9 +228,11 @@ for iter = 1 : (M + Burnin)
             Z(Idx{i}, i) = mu2 + L * normrnd(0, 1, length(Idx{i}), 1);
         end
     else    
-         Zvar = pinv(K + rn .* I);
-         Zmean = (K + rn .* I) \ (rn .* Yfull + repmat(K * mu, 1, n)); 
-         try L = chol(Zvar, 'lower'); catch L = chol(topdm(Zvar), 'lower'); end;
+         iZvar = (K + rn .* I);
+         Zvar = pinv(iZvar);
+         Zmean = (iZvar) \ (rn .* Yfull + repmat(K * mu, 1, n)); 
+        % try L = chol(Zvar, 'lower'); catch L = chol(topdm(Zvar), 'lower'); end;
+         L=mychol(Zvar);
          Z = Zmean + L * normrnd(0, 1, p, n); 
     end
 
@@ -240,7 +242,8 @@ for iter = 1 : (M + Burnin)
     %update signal mean mu
     Mu_var = iK ./ (n + c);
     Mu_mean = (sum(Z, 2) + c .* mu0) ./ (n + c); 
-    try L = chol(Mu_var, 'lower'); catch L = chol(topdm(Mu_var), 'lower'); end;    
+    %try L = chol(Mu_var, 'lower'); catch L = chol(topdm(Mu_var), 'lower'); end;  
+    L = mychol(Mu_var);
     mu = Mu_mean + L * normrnd(0, 1, p, 1);
     
     %update signal precision matrix K
@@ -267,10 +270,12 @@ display('Ending MCMC...')
 
 %% MCMC diagnosis
  addpath(genpath(cat(2, pwd, '/mcmcdiag')))
+ display('Calculate Potential Scale Reduction Factor (PSRF) to examine whether the MCMC chain has acheived convergency')
+ display('PSRF < 1.2 means the MCMC chain convergen')
  psrf(rsOut')
- psrf(rnOut');
- psrf(reshape(ZOut(1, :, :), M, 100))
- psrf(reshape(iKOut(1, :, :), M, 100))
+ psrf(rnOut')
+ psrf(reshape(ZOut(1, :, :), M, n))
+ psrf(reshape(iKOut(1, :, :), M, p))
  psrf(muOut')
 
 %% Calculate MCMC sample average

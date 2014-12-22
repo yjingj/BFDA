@@ -1,4 +1,4 @@
-function [output] = bhmcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_p, nu, ws)
+function [output] = bhmcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_p, nu, ws, w)
 
 % Author: Jingjing Yang (yjingj@gmail.com)
 % Main function to implement the MCMC algorithm for smoothing functional
@@ -153,13 +153,13 @@ rs = (trace(Sigma_est) - p * snhat2 ) / (trace(A) / (delta - 2));
 display(['Initial Estimates: ', ' noise variance = ', num2str(snhat2),'; sigma_s^2 = ', num2str(rs)])
 
 % Determine hyper-priors
-b = rn;
+b = 1/w;
 a = b * rn;
 %rs = ws * rs;
 %display(['Hyper-prior parameters: ', ' a = ', num2str(a), '; b = ', num2str(b),'; rs = ', num2str(rs)])
 
-bs = ws/rs;
-as = bs * rs * ws;
+bs = 1/ws;
+as = bs * rs;
 %bs = rs * ws;
 %as = bs * rs * ws; 
 
@@ -270,11 +270,18 @@ display('Ending MCMC...')
 
 %% MCMC diagnosis
  addpath(genpath(cat(2, pwd, '/mcmcdiag')))
+ display('Calculate Potential Scale Reduction Factor (PSRF)...');
+ display('PSRF < 1.2 means the MCMC chain mixed well and acheived convergence.');
+ display('PSRF for 1/sigma_epsilon^2: ')
  psrf(rsOut')
- psrf(rnOut');
- psrf(reshape(ZOut(1, :, :), M, 100))
- psrf(reshape(iKOut(1, :, :), M, 100))
- psrf(muOut')
+ display('PSRF for 1/sigma_s^2: ')
+ psrf(rnOut')
+  display('PSRF for Z(1,1) : ')
+ psrf(ZOut(1, 1, :)
+  display('PSRF for Sigma(1,1) : ')
+ psrf(iKOut(1, 1, :))
+ display('PSRF for mu(1): ')
+ psrf(muOut(1, :)')
 
 %% Calculate MCMC sample average
 display('Calculating posterior sample means...');
