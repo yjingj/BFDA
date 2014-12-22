@@ -228,11 +228,9 @@ for iter = 1 : (M + Burnin)
             Z(Idx{i}, i) = mu2 + L * normrnd(0, 1, length(Idx{i}), 1);
         end
     else    
-         iZvar = (K + rn .* I);
-         Zvar = pinv(iZvar);
-         Zmean = (iZvar) \ (rn .* Yfull + repmat(K * mu, 1, n)); 
-        % try L = chol(Zvar, 'lower'); catch L = chol(topdm(Zvar), 'lower'); end;
-         L=mychol(Zvar);
+         Zvar = pinv(K + rn .* I);
+         Zmean = (K + rn .* I) \ (rn .* Yfull + repmat(K * mu, 1, n)); 
+         try L = chol(Zvar, 'lower'); catch L = chol(topdm(Zvar), 'lower'); end;
          Z = Zmean + L * normrnd(0, 1, p, n); 
     end
 
@@ -242,8 +240,7 @@ for iter = 1 : (M + Burnin)
     %update signal mean mu
     Mu_var = iK ./ (n + c);
     Mu_mean = (sum(Z, 2) + c .* mu0) ./ (n + c); 
-    %try L = chol(Mu_var, 'lower'); catch L = chol(topdm(Mu_var), 'lower'); end;  
-    L = mychol(Mu_var);
+    try L = chol(Mu_var, 'lower'); catch L = chol(topdm(Mu_var), 'lower'); end;    
     mu = Mu_mean + L * normrnd(0, 1, p, 1);
     
     %update signal precision matrix K
