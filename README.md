@@ -3,7 +3,7 @@ SmoothingMatlabCode
 
 Matlab code to smoothing functional data
 
-== bhmcmc.m ==
+/// bhmcmc.m //
 Main function to implement MCMC
 
 == gaussian_sim.m ==
