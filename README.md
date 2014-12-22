@@ -3,33 +3,43 @@ SmoothingMatlabCode
 
 Matlab code to smoothing functional data
 
--**bhmcmc.m**
+- **bhmcmc.m**
+
 Main function to implement MCMC
 
--**gaussian_sim.m**
+- **gaussian_sim.m**
+
 Function to generate simulated stationary functional data with Matern covariance.
 
--**gaussian_simNS.m**
+- **gaussian_simNS.m**
+
 Function to generate non-stationary functional data with covariance trasformed from a Matern class.
 
--**Matern.m**
+- **Matern.m**
+
 Function to calculate Matern covariance given distance matrix.
 
--**COR.m**
+- **COR.m**
+
 Function to output correlation matrix given covariance matrix.
 
--**rmse.m**
+- **rmse.m**
+
 Function to calculate RMSE.
 
--**rimse.m**
+- **rimse.m**
+
 Function to calculate RIMSE.
 
--**mychol.m**
+- **mychol.m**
+
 Function to output a matrix L such that LL' = input covariance matrix.
 
--**PACErelease2.11/**
+- **PACErelease2.11/**
+
 PACE matlab package written by Yao et. al. 
 
--**mcmcdiag/**
+- **mcmcdiag/**
+
 Matlab functions to diagonize MCMC convergence.
 
