@@ -91,34 +91,39 @@ Burnin = 2000; M = 10000;  delta = 5;
 b = 20; mat = true;
  
 %%
-    BHM_cgrid = bhmcmc(Y_cgrid, T_cgrid, delta, 2, ...
-        Burnin, M, mat, Sigma_est, mu_cgrid, [], 7.2); 
+    BHM_cgrid = bhmcmc(Y_cgrid, T_cgrid, delta, true, ...
+        Burnin, M, mat, Sigma_est, mu_cgrid, [], 0.1, 0.1); 
     rmse(BHM_cgrid.iK, C) 
+    rmse(BHM_cgrid.iKSE, C)
     rmse(Sigma_est, C)
     rmse(COR(BHM_cgrid.iK), COR(C))
+    rmse(COR(BHM_cgrid.iKSE), COR(C))
     rmse(COR(Sigma_est), COR(C))
     rmse(BHM_cgrid.Z, X0)
     
-    BHMns_cgrid = bhmcmc(Yns_cgrid, Tns_cgrid, delta, 2, ...
-        Burnin, M, 0, Sigma_est_ns, mu_ns, [], 5); 
+    BHMns_cgrid = bhmcmc(Yns_cgrid, Tns_cgrid, delta, true, ...
+        Burnin, M, 0, Sigma_est_ns, mu_ns, [], 1, 1); 
     rmse(BHMns_cgrid.iK, Cns)
     rmse(Sigma_est_ns, Cns)
-    rmse(COR(BHMns_cgrid.iK), COR(Cns))
+    rmse(COR(BHMns_cgrid.iK), COR(C))    
+    rmse(COR(BHMns_cgrid.iKSE), COR(Cns))
     rmse(COR(Sigma_est_ns), COR(Cns))
     rmse(BHMns_cgrid.Z, X0ns)
 
     
-        BHM_sparse = bhmcmc(Y, T, delta, 0, Burnin, M, mat, ...
+    BHM_sparse = bhmcmc(Y, T, delta, 0, Burnin, M, mat, ...
         Sigma_est_sparse, mu_sparse, [], 1); 
     rmse(BHM_sparse.iK, C)
+    rmse(BHM_sparse.iKSE, C)
     rmse(Sigma_est_sparse, C)
     rmse(BHM_sparse.Z, X0)
     
     BHMns_sparse = bhmcmc(Yns, Tns, delta, 0, Burnin, M, 0,...
         Sigma_est_sparse_ns, mu_sparse_ns, [], 1); 
     rmse(BHMns_sparse.iK, Cns)
+    rmse(BHMns_sparse.iKSE, Cns)
     rmse(Sigma_est_sparse_ns, Cns)
-        rmse(BHMns_sparse.Z, X0ns)
+    rmse(BHMns_sparse.Z, X0ns)
 
     
 

@@ -1,9 +1,11 @@
 function [L] = mychol(sig) 
 
-
 [U, S, V] = svd(sig);
-S(S < 0) = 0;
-L = U * sqrt(S);
+DS = diag(S);
+DS = sqrt(DS);
+minDS = mean(DS)*10^(-8);
+DS(DS < 0) = minDS;
+L = U * diag(DS);
 
 end 
 

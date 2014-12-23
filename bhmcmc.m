@@ -16,6 +16,8 @@ function [output] = bhmcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_p, 
  % mu_p: empirical mean estimate
  % A: empirical correlation estimate
  % nu: order of smoothness in the Matern function; usually use 2.5
+ % ws: scale the variance for the prior of sigma_s^2
+ % w: scale the variance for the prior of rn
  
  %% Outputs a structure with elements
  % t: pooled grid
@@ -107,14 +109,14 @@ end
      
 %% Solve for rho and nu
 % by minimizing the MSE between A and Matern correlation matrix
-nu=[];
+
 if (mat) 
     
     A = COR(Sigma_est);
     
     if(isempty(nu))       
         myobj = @(x) mean(mean((A - Matern(D, x(1), x(2), 1)).^2)); 
-        [xx, fval] = fmincon(myobj, [1; 2.5], [], [], [], [], [1e-3; 2.5], [Inf; Inf]);
+        [xx, fval] = fmincon(myobj, [1; 2.5], [], [], [], [], [1e-3; 2.5], [Inf; 4.5]);
         rho = xx(1);
         nu = xx(2);  
 
@@ -139,7 +141,7 @@ if (mat)
 else
     
     A = Sigma_est;
-    try chol(A); catch A = topdm(A); end; %make empirical cov est Positive Definite
+   % try chol(A); catch A = topdm(A); end; %make empirical cov est Positive Definite
     display('using empirical estimated covariance structure in the IW scale matrix');
     
 end
@@ -153,12 +155,12 @@ rs = (trace(Sigma_est) - p * snhat2 ) / (trace(A) / (delta - 2));
 display(['Initial Estimates: ', ' noise variance = ', num2str(snhat2),'; sigma_s^2 = ', num2str(rs)])
 
 % Determine hyper-priors
-b = 1/w;
+b = 1 / w;
 a = b * rn;
 %rs = ws * rs;
 %display(['Hyper-prior parameters: ', ' a = ', num2str(a), '; b = ', num2str(b),'; rs = ', num2str(rs)])
 
-bs = 1/ws;
+bs = 1 / ws;
 as = bs * rs;
 %bs = rs * ws;
 %as = bs * rs * ws; 
@@ -216,7 +218,7 @@ for iter = 1 : (M + Burnin)
                 V2 = pinv(iV2); 
                 mu2 = iV2 \ (rn * Y{i}' + (V11) \ mu(Idx{i}));
             else
-                try L = chol(V3, 'lower'); catch L = chol(topdm(V3), 'lower'); end;
+                L = mychol(V3);
                 Z(Idx_rest{i}, i) = mu3 + L * normrnd(0, 1, length(Idx_rest{i}), 1);                
                 B2 = B0'/ V3;
                 iV2 = rn * eye(P(i)) + pinv(V11) + B2 * B0;
@@ -224,15 +226,14 @@ for iter = 1 : (M + Burnin)
                 mu2 = iV2 \ (rn * Y{i}' + V11 \ mu(Idx{i}) + B2 * (B1 + Z(Idx_rest{i}, i)));
             end
             
-            try L = chol(V2, 'lower'); catch L = chol(topdm(V2), 'lower'); end;
+            L = mychol(V2);
             Z(Idx{i}, i) = mu2 + L * normrnd(0, 1, length(Idx{i}), 1);
         end
     else    
          iZvar = (K + rn .* I);
          Zvar = pinv(iZvar);
          Zmean = (iZvar) \ (rn .* Yfull + repmat(K * mu, 1, n)); 
-        % try L = chol(Zvar, 'lower'); catch L = chol(topdm(Zvar), 'lower'); end;
-         L=mychol(Zvar);
+         L = mychol(Zvar);
          Z = Zmean + L * normrnd(0, 1, p, n); 
     end
 
@@ -242,17 +243,16 @@ for iter = 1 : (M + Burnin)
     %update signal mean mu
     Mu_var = iK ./ (n + c);
     Mu_mean = (sum(Z, 2) + c .* mu0) ./ (n + c); 
-    %try L = chol(Mu_var, 'lower'); catch L = chol(topdm(Mu_var), 'lower'); end;  
     L = mychol(Mu_var);
     mu = Mu_mean + L * normrnd(0, 1, p, 1);
     
     %update signal precision matrix K
-            %update signal variance rs    
-    Phi = rs .* A; 
+    % Phi = rs .* A; 
     G = (Z- repmat(mu, 1, n)) * (Z - repmat(mu, 1, n))' +...
-        c .* (mu - mu0) * (mu - mu0)' + Phi; 
+        c .* (mu - mu0) * (mu - mu0)' + rs .* A; 
     [iK, K] = myiwishrnd(mp, G, p);       
-        
+    
+    %update signal variance rs 
     rs = gamrnd(p*m/2 + as, 1/(bs + trace(A * K) / 2)); 
     
     % Save all MCMC samples   
@@ -270,18 +270,15 @@ display('Ending MCMC...')
 
 %% MCMC diagnosis
  addpath(genpath(cat(2, pwd, '/mcmcdiag')))
- display('Calculate Potential Scale Reduction Factor (PSRF)...');
+ display(['Calculate Potential Scale Reduction Factor (PSRF)...']);
  display('PSRF < 1.2 means the MCMC chain mixed well and acheived convergence.');
- display('PSRF for 1/sigma_epsilon^2: ')
- psrf(rsOut')
- display('PSRF for 1/sigma_s^2: ')
- psrf(rnOut')
-  display('PSRF for Z(1,1) : ')
- psrf(ZOut(1, 1, :)
-  display('PSRF for Sigma(1,1) : ')
- psrf(iKOut(1, 1, :))
- display('PSRF for mu(1): ')
- psrf(muOut(1, :)')
+ 
+ display(['PSRF for 1/sigma_epsilon^2: ', num2str( psrf(rsOut'))]);
+ display(['PSRF for 1/sigma_s^2: ', num2str( psrf(rnOut'))]);
+ display(['PSRF for Z(1,1) : ', num2str(psrf(reshape(ZOut(1, 1, :), M, 1)))]);
+ display(['PSRF for Sigma(1,1) : ', num2str(psrf(reshape(iKOut(1, 1, :), M, 1)))]); 
+ display(['PSRF for mu(1): ', num2str( psrf(muOut(1, :)'))]);
+
 
 %% Calculate MCMC sample average
 display('Calculating posterior sample means...');
@@ -290,7 +287,7 @@ iK = mean(iKOut(:, :, :), 3);
 mu = mean(muOut(:, :), 2);
 rs = mean(rsOut);
 rn = mean(rnOut);
-
+iKSE = cov(Z');
 
 %% 95% pointwise confidence interval
 display('Calculating 95% CI...')
@@ -317,12 +314,12 @@ rn_CI = [rn_sort(q1), rn_sort(q2)];
 
 %%
 if(mat)
-    output = struct('t', t, 'Z', Z, 'iK', iK,  'mu', mu, 'mu0', mu0, 'rn', rn, 'rs', rs,...
+    output = struct('t', t, 'Z', Z, 'iK', iK, 'iKSE', iKSE, 'mu', mu, 'mu0', mu0, 'rn', rn, 'rs', rs,...
         'rho', rho, 'nu', nu, 'Sigma_est', Sigma_est, 'Z_CL', Z_CL, ...
         'Z_UL', Z_UL, 'iK_CL', iK_CL, 'iK_UL', iK_UL, 'mu_CI', mu_CI, ...
         'rs_CI', rs_CI, 'rn_CI', rn_CI,'Yfull', Yfull, 'mat', mat);
 else
-    output = struct('t', t, 'Z', Z, 'iK', iK,  'mu', mu, 'mu0', mu0, 'rn', rn, 'rs', rs,...
+    output = struct('t', t, 'Z', Z, 'iK', iK, 'iKSE', iKSE, 'mu', mu, 'mu0', mu0, 'rn', rn, 'rs', rs,...
         'Sigma_est', Sigma_est, 'Z_CL', Z_CL, ...
         'Z_UL', Z_UL, 'iK_CL', iK_CL, 'iK_UL', iK_UL, 'mu_CI', mu_CI, ...
         'rs_CI', rs_CI, 'rn_CI', rn_CI,'Yfull', Yfull, 'mat', mat);
