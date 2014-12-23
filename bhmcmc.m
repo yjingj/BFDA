@@ -155,12 +155,12 @@ rs = (trace(Sigma_est) - p * snhat2 ) / (trace(A) / (delta - 2));
 display(['Initial Estimates: ', ' noise variance = ', num2str(snhat2),'; sigma_s^2 = ', num2str(rs)])
 
 % Determine hyper-priors
-b = 1 / w;
+b = rn / w;
 a = b * rn;
 %rs = ws * rs;
 %display(['Hyper-prior parameters: ', ' a = ', num2str(a), '; b = ', num2str(b),'; rs = ', num2str(rs)])
 
-bs = 1 / ws;
+bs = rn / ws;
 as = bs * rs;
 %bs = rs * ws;
 %as = bs * rs * ws; 

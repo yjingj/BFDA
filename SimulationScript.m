@@ -87,61 +87,41 @@ addpath(genpath(cat(2, pwd, '/PACErelease2.11')))
     mu_sparse_ns = (getVal(PCAns_sparse, 'mu'));
 
 %% common grid
-Burnin = 2000; M = 10000;  delta = 5; 
-b = 20; mat = true;
+Burnin = 2000; M = 10000;  delta = 5; mat = true;
  
 %%
     BHM_cgrid = bhmcmc(Y_cgrid, T_cgrid, delta, true, ...
-        Burnin, M, mat, Sigma_est, mu_cgrid, [], 0.1, 0.1); 
-    rmse(BHM_cgrid.iK, C) 
+        Burnin, M, mat, Sigma_est, mu_cgrid, [], 10, 10); 
     rmse(BHM_cgrid.iKSE, C)
     rmse(Sigma_est, C)
-    rmse(COR(BHM_cgrid.iK), COR(C))
-    rmse(COR(BHM_cgrid.iKSE), COR(C))
-    rmse(COR(Sigma_est), COR(C))
     rmse(BHM_cgrid.Z, X0)
     
     BHMns_cgrid = bhmcmc(Yns_cgrid, Tns_cgrid, delta, true, ...
-        Burnin, M, 0, Sigma_est_ns, mu_ns, [], 1, 1); 
-    rmse(BHMns_cgrid.iK, Cns)
+        Burnin, M, 0, Sigma_est_ns, mu_ns, [], 10, 10); 
+    rmse(BHMns_cgrid.iKSE, Cns)
     rmse(Sigma_est_ns, Cns)
-    rmse(COR(BHMns_cgrid.iK), COR(C))    
-    rmse(COR(BHMns_cgrid.iKSE), COR(Cns))
-    rmse(COR(Sigma_est_ns), COR(Cns))
     rmse(BHMns_cgrid.Z, X0ns)
 
     
     BHM_sparse = bhmcmc(Y, T, delta, 0, Burnin, M, mat, ...
-        Sigma_est_sparse, mu_sparse, [], 1); 
-    rmse(BHM_sparse.iK, C)
+        Sigma_est_sparse, mu_sparse, [], 10, 10); 
     rmse(BHM_sparse.iKSE, C)
     rmse(Sigma_est_sparse, C)
     rmse(BHM_sparse.Z, X0)
     
     BHMns_sparse = bhmcmc(Yns, Tns, delta, 0, Burnin, M, 0,...
-        Sigma_est_sparse_ns, mu_sparse_ns, [], 1); 
-    rmse(BHMns_sparse.iK, Cns)
+        Sigma_est_sparse_ns, mu_sparse_ns, [], 10, 10); 
     rmse(BHMns_sparse.iKSE, Cns)
     rmse(Sigma_est_sparse_ns, Cns)
     rmse(BHMns_sparse.Z, X0ns)
 
-    
-
-    
-% rmse(BHMns_cgrid.iK, Cns)
-   
-% bhmcmc(Y, T, delta, cgrid, b, bs, Burnin, M, mat, Sigma_est, mu_p, nu)
 
 %%
-%July5
+%
 
-save('simulationAug8.mat', 'GausData', 'GausData_NS', 'BHM_cgrid', 'PCA_cgrid', ...
-            'BHMns_cgrid', 'PCAns_cgrid', 'BHM_sparse', 'BHMns_sparse', ...
-            'PCA_sparse', 'PCAns_sparse')
-        
- save('temp_cgrid.mat', 'BHM_cgrid', 'BHMns_cgrid')
- save('temp_sparse.mat', 'BHM_sparse', 'BHMns_sparse')
- 
+% save('SimulationData.mat', 'GausData', 'GausData_NS', 'BHM_cgrid', 'PCA_cgrid', ...
+%            'BHMns_cgrid', 'PCAns_cgrid', 'BHM_sparse', 'BHMns_sparse', ...
+%            'PCA_sparse', 'PCAns_sparse')
 
 
 
