@@ -13,7 +13,7 @@ Example simulation studies
 - **CaseStudyScript.m**
 Multiple case study script
 
-- ** plot...m **
+- **plot...m**
 Script to generate plots
 
 ### Basis function approach related code
