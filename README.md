@@ -3,7 +3,7 @@ SmoothingMatlabCode
 
 Matlab code to smoothing functional data
 
---- Important matlab functions and scripts
+### Important matlab functions and scripts
 
 - **bhmcmc.m**
 Main function to implement MCMC
@@ -41,7 +41,7 @@ Function to output a matrix L such that LL' = input covariance matrix.
 - ** myiwishrnd.m **
 Function to generate sample matrix from a Inverse-Wishart distribution with given degrees of freedom, scale matrix, and dimension.
 
--- Other Matlab Libraries
+### Other Matlab Libraries
 
 - **PACErelease2.11/**
 PACE matlab package written by Yao et. al. 
