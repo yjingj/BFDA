@@ -3,8 +3,19 @@ SmoothingMatlabCode
 
 Matlab code to smoothing functional data
 
+--- Important matlab functions and scripts
+
 - **bhmcmc.m**
 Main function to implement MCMC
+
+- **SimulationScript.m**
+Example simulation studies
+
+- **CaseStudyScript.m**
+Multiple case study script
+
+- ** plot...m **
+Script to generate plots
 
 - **gaussian_sim.m**
 Function to generate simulated stationary functional data with Matern covariance.
@@ -26,6 +37,11 @@ Function to calculate RIMSE.
 
 - **mychol.m**
 Function to output a matrix L such that LL' = input covariance matrix.
+
+- ** myiwishrnd.m **
+Function to generate sample matrix from a Inverse-Wishart distribution with given degrees of freedom, scale matrix, and dimension.
+
+-- Other Matlab Libraries
 
 - **PACErelease2.11/**
 PACE matlab package written by Yao et. al. 

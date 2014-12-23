@@ -141,7 +141,6 @@ if (mat)
 else
     
     A = Sigma_est;
-   % try chol(A); catch A = topdm(A); end; %make empirical cov est Positive Definite
     display('using empirical estimated covariance structure in the IW scale matrix');
     
 end
