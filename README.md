@@ -1,8 +1,7 @@
 SmoothingMatlabCode
 ===================
 
-Matlab code to smoothing functional data
---------------------------------------------------------
+## Matlab code to smoothing functional data
 
 ### Grid approach related functions
 - **bhmcmc.m**
@@ -50,8 +49,7 @@ Function to generate sample matrix from a Inverse-Wishart distribution with give
 ### Other Matlab Libraries used in the code
 
 - **PACErelease2.11/**
-PACE matlab package written by Yao et. al. 
+PACE matlab package written by Yao et. al.
 
 - **mcmcdiag/**
 Matlab functions to diagonize MCMC convergence.
-
