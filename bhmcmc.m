@@ -1,4 +1,4 @@
-function [output] = bhmcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_p, nu, ws, w)
+function [output] = bhmcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_p, nu, w, ws)
 
 % Author: Jingjing Yang (yjingj@gmail.com)
 % Main function to implement the MCMC algorithm for smoothing functional
@@ -16,12 +16,13 @@ function [output] = bhmcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_p, 
  % mu_p: empirical mean estimate
  % A: empirical correlation estimate
  % nu: order of smoothness in the Matern function; usually use 2.5
- % ws: scale the variance for the prior of sigma_s^2
- % w: scale the variance for the prior of rn
+ % w: scale the variance for the prior of sigma_s^2
+ % ws: scale the variance for the prior of rn
  
  %% Outputs a structure with elements
  % t: pooled grid
  % Z: Bayesian Signals Estimates (smoothed), p by n;
+ % iKSE: Sample covariance estimate with Bayesian smoothed data 
  % iK: Bayesian estimate of Covariance matrix, p by p;
  % mu: Bayesian estimate of curve mean, p by 1;
  % rn: Bayesian estimate of noise precision \gamma_{noise};
