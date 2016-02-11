@@ -1,8 +1,6 @@
-function [output] = bhmcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_p, nu, w, ws)
-
-% Author: Jingjing Yang (yjingj@gmail.com)
-% Main function to implement the MCMC algorithm for smoothing functional
-% data
+%% Author: Jingjing Yang (yjingj@gmail.com)
+% Main function to implement the MCMC algorithm for smoothing and estimation of
+%   functional data by BHM
  
 %% Inputs
  % Y: 1 by n cell array with raw data, each element is an observation;
@@ -13,13 +11,13 @@ function [output] = bhmcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_p, 
  % Burnin, M : number of iterations for MCMC
  % mat: 2 menas matern sturcture for Psi, 0 uses PACE correlation estimate
  % Sigma_est: empirical covariance estimate
- % mu_p: empirical mean estimate
+ % mu_p: empirical mean estimate on pooled grid
  % A: empirical correlation estimate
  % nu: order of smoothness in the Matern function; usually use 2.5
  % w: scale the variance for the prior of sigma_s^2
  % ws: scale the variance for the prior of rn
  
- %% Outputs a structure with elements
+%% Outputs a structure with elements
  % t: pooled grid
  % Z: Bayesian Signals Estimates (smoothed), p by n;
  % iKSE: Sample covariance estimate with Bayesian smoothed data 
@@ -35,114 +33,83 @@ function [output] = bhmcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_p, 
  % mat: given by input
  % along with 95% credible intervals for all Bayesian estimates
  
+function [output] = bhm_mcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_est, pgrid, nu, c, w, ws)
+
  %%                   
-t = sort(unique(cell2mat(T))); %pooled grid
-p = length(t); % length of the pooled grid
+p = length(pgrid); % length of the pooled grid
 I = eye(p); % identity matrix
 n = size(Y, 2); % # of signals
 P = cellfun(@length, Y); % # of observations for each signal
 
-D = zeros(p); % Distance matrix
-for i = 1 : p
-    for j = 1 : p
-    D(i, j) = abs(t(i) - t(j));
-    end
-end
+J = ones(p, 1);
+D = abs(J * pgrid - pgrid' * J');
+    
 
 %% construct matrix form of the raw signal data
 
 if  ~cgrid
-    display('sparse case with uncommon grid')
+    display('Inputs: uncommon-grid functional data')
     Idx = cell(n, 1); % Cell of index for observed grid on the pooled grid
     Idx_rest = cell(n, 1); % Cell of index for unobserved grid on the pooled grid
     Yfull = NaN(p, n); % n by p data matrix with nan's for unobserved data
     for i = 1:n
-       Idx{i} = find(ismember(t, T{i}));
-       Idx_rest{i} = find(~ismember(t, T{i}));
+       Idx{i} = find(ismember(pgrid, T{i}));
+       Idx_rest{i} = find(~ismember(pgrid, T{i}));
        Yfull(Idx{i}, i) = Y{i};
     end 
     
 else 
-    display('functional data with common grid')
+    display('Inputs: common-grid functional data')
     Yfull = reshape(cell2mat(Y), p, n);
 end
 
 %% MCMC sampling set up
 %delta = 5
-m = delta + p - 1; %degrees of freedom for the inv-Wishart with delta
-mp = n + delta + p; %degrees of freedom for the conditional posterior inv-Wishart with n+1+delta
-c = 1; %Choose prior normal distribution for mean (arbitrarily)
+m = delta + p - 1; % degrees of freedom for the inv-Wishart with delta
+mp = n + delta + p; % degrees of freedom for the conditional posterior inv-Wishart with n+1+delta
+% c = 1; % Choose prior normal distribution for mean (arbitrarily)
 
-%% Find an empirical estimate for the covariance and sample mean by PACE, if not given
-
-% Part of the 2D smoothing code from PACE. 
-if (isempty(Sigma_est) || isempty (mu_p))
-    addpath(genpath(cat(2, pwd, '/PACErelease2.11')))
-    tt = cell2mat(T);  % 1 x N vector to hold the observed time points from all subjects
-    yy = cell2mat(Y);  % 1 x N vector to hold the observed measurements from all subjects
-
-    %Initial out1 is based on the unique time points of the pooled data.
-    out1 =unique(tt);ngrid1 = length(out1); regular = cgrid; 
-    error = 1; kernel = 'gauss'; verbose = 'on';
-
-    % Determine bandwidth of mu using local smoothing using GCV.
-    bw_mu = gcv_lwls(yy,tt,kernel,1,1,0,regular,verbose);    %use GCV method to choose bw for mean function
-    bw_mu = adjustBW1(kernel,bw_mu,1,0,regular,verbose);
-
-    %define the vector of case weight in the local weighted least square
-    %here, it is set to be one for all subjects
-    win1 = ones(1,length(tt));
-    [~, mu_p] = lwls(bw_mu, kernel, 1,1,0,tt,yy',win1,out1); % mu is the locally smoothed mu(t) function.  
-    rcov = getRawCov(Y, T, out1, mu_p, regular, 0); % Now get the raw Covariance, using (Y_{ij}-mu(t_{ij}))*(Y_{ij'}-mu(t_{ij'}))
-
-    % Now smooth the raw covariance to get R estimate.
-    [bw_xcov] =  gcv_mullwlsn(T,ngrid1,regular,error, kernel,rcov,verbose);
-    bw_xcov = adjustBW2(kernel,bw_xcov,1,0,regular,verbose);
-
-    [~,xcov]=mullwlsk(bw_xcov,kernel,rcov.tpairn,rcov.cxxn',rcov.win,t,t);  %smooth raw covariance;
-    Sigma_est = (xcov+xcov')/2;   %transform the smoothed covariance matrix to guarantee it is a symmetric matrix.
-    
-else display('Run with given mean/covariance estimate ... ')
-
-end
-
-
-     
+ 
 %% Solve for rho and nu
 % by minimizing the MSE between A and Matern correlation matrix
 
 if (mat) 
     
     A = COR(Sigma_est);
+    options = optimoptions('fmincon','Display','notify');
     
     if(isempty(nu))       
         myobj = @(x) mean(mean((A - Matern(D, x(1), x(2), 1)).^2)); 
-        [xx, fval] = fmincon(myobj, [1; 2.5], [], [], [], [], [1e-3; 2.5], [Inf; 4.5]);
+        [xx, fval] = fmincon(myobj, [1; 2.5], [], [], [], [], ...
+            [1e-3; 2.5], [Inf; 10], [],options);
         rho = xx(1);
         nu = xx(2);  
 
         if(isnan(rho) )
         display('solve for rho and nu failed, fix nu = 2.5')
         nu = 2.5;
-        [xx, fval] = fmincon(myobj, [1; nu], [], [], [], [], [1e-3; nu], [Inf; nu]);
+        [xx, fval] = fmincon(myobj, [1; nu], [], [], [], [], ...
+            [1e-3; nu], [Inf; nu], [],options);
         rho = xx(1);
         end
 
     else 
          myobj = @(x) mean(mean((A - Matern(D, x(1), x(2), 1)).^2)); 
          display('solve for rho with given value for nu')
-        [xx, fval] = fmincon(myobj, [1; nu], [], [], [], [], [1e-3; nu], [Inf; nu]);
+        [xx, fval] = fmincon(myobj, [1; nu], [], [], [], [], ...
+            [1e-3; nu], [Inf; nu], [],options);
         rho = xx(1);
     end
     
-  display('using Matern correlation structure in the IW scale matrix');  
+  display('Using Matern correlation structure in the IW scale matrix with:');  
+  display(['; rho = ', num2str(rho), '; nu = ', num2str(nu)]);
+  
   A = Matern(D, rho, nu, 1); 
-  display(['minimum L2 distance', num2str(fval), '; rho = ', num2str(rho), '; nu = ', num2str(nu)]);
 
 else
     
     A = Sigma_est;
-    display('using empirical estimated covariance structure in the IW scale matrix');
+    display('Using pre-estimated covariance structure in the IW scale matrix...');
     
 end
 
@@ -155,33 +122,24 @@ rs = (trace(Sigma_est) - p * snhat2 ) / (trace(A) / (delta - 2));
 display(['Initial Estimates: ', ' noise variance = ', num2str(snhat2),'; sigma_s^2 = ', num2str(rs)])
 
 % Determine hyper-priors
-b = rn / w;
-a = b * rn;
-%rs = ws * rs;
-%display(['Hyper-prior parameters: ', ' a = ', num2str(a), '; b = ', num2str(b),'; rs = ', num2str(rs)])
-
-bs = rn / ws;
-as = bs * rs;
-%bs = rs * ws;
-%as = bs * rs * ws; 
+b = 1 / w; a = b * rn;
+bs = 1 / ws; as = bs * rs;
 
 display(['Hyper-prior parameters: ', ' a = ', num2str(a), '; b = ', num2str(b),...
     '; as = ', num2str(as), '; bs = ', num2str(bs)])
 
-% Initial set up parameter values
-mu = nanmean(Yfull, 2); % Sample mean
-Z = Yfull;
-Mu = repmat(mu, 1, n);
-Z(isnan(Z)) = Mu(isnan(Z));
 
-if(isempty(mu_p))
-    mu0 = smooth(mu, 0.5, 'lowess');
-else
-    mu0 = mu_p';
-end
+mu0 = reshape(mu_est, p, 1); % prior mean for mu
+
+% Initial set up parameter values
+Z = Yfull;
+mu = mu0; % starting value
+Mu = repmat(mu0, 1, n);
+Z(isnan(Z)) = Mu(isnan(Z));
 
 iK = I;   % covariance matrix
 K = pinv(iK); % precision matrix
+
 
 %% assign memory ahead
 
@@ -212,7 +170,7 @@ for iter = 1 : (M + Burnin)
             V3 = V22 - V12' / (V11) * V12;
             
             s=svd(V3);
-            if s(1) < 0.0001
+            if s(length(s)) < 0.0001
                 Z(Idx_rest{i}, i) = mu3;
                 iV2 = rn * eye(P(i)) + pinv(V11);
                 V2 = pinv(iV2); 
@@ -247,7 +205,6 @@ for iter = 1 : (M + Burnin)
     mu = Mu_mean + L * normrnd(0, 1, p, 1);
     
     %update signal precision matrix K
-    % Phi = rs .* A; 
     G = (Z- repmat(mu, 1, n)) * (Z - repmat(mu, 1, n))' +...
         c .* (mu - mu0) * (mu - mu0)' + rs .* A; 
     [iK, K] = myiwishrnd(mp, G, p);       
@@ -270,6 +227,7 @@ display('Ending MCMC...')
 
 %% MCMC diagnosis
  addpath(genpath(cat(2, pwd, '/mcmcdiag')))
+ 
  display(['Calculate Potential Scale Reduction Factor (PSRF)...']);
  display('PSRF < 1.2 means the MCMC chain mixed well and acheived convergence.');
  
@@ -282,6 +240,7 @@ display('Ending MCMC...')
 
 %% Calculate MCMC sample average
 display('Calculating posterior sample means...');
+
 Z = mean(ZOut(:, :, :), 3); 
 iK = mean(iKOut(:, :, :), 3);
 mu = mean(muOut(:, :), 2);
@@ -291,6 +250,7 @@ iKSE = cov(Z');
 
 %% 95% pointwise confidence interval
 display('Calculating 95% CI...')
+
 Z_sort = sort(ZOut, 3); 
 iK_sort = sort(iKOut, 3); 
 mu_sort = sort(muOut, 2);
@@ -314,16 +274,18 @@ rn_CI = [rn_sort(q1), rn_sort(q2)];
 
 %%
 if(mat)
-    output = struct('t', t, 'Z', Z, 'iK', iK, 'iKSE', iKSE, 'mu', mu, 'mu0', mu0, 'rn', rn, 'rs', rs,...
-        'rho', rho, 'nu', nu, 'Sigma_est', Sigma_est, 'Z_CL', Z_CL, ...
+    output = struct('Z', Z, 'iK', iK, 'iKSE', iKSE, ...
+        'mu', mu, 'rn', rn, 'rs', rs,'Z_CL', Z_CL, ...
         'Z_UL', Z_UL, 'iK_CL', iK_CL, 'iK_UL', iK_UL, 'mu_CI', mu_CI, ...
-        'rs_CI', rs_CI, 'rn_CI', rn_CI,'Yfull', Yfull, 'mat', mat);
+        'rs_CI', rs_CI, 'rn_CI', rn_CI, ...
+        'rho', rho, 'nu', nu);
 else
-    output = struct('t', t, 'Z', Z, 'iK', iK, 'iKSE', iKSE, 'mu', mu, 'mu0', mu0, 'rn', rn, 'rs', rs,...
-        'Sigma_est', Sigma_est, 'Z_CL', Z_CL, ...
+    output = struct('Z', Z, 'iK', iK, 'iKSE', iKSE, ...
+        'mu', mu, 'rn', rn, 'rs', rs, 'Z_CL', Z_CL, ...
         'Z_UL', Z_UL, 'iK_CL', iK_CL, 'iK_UL', iK_UL, 'mu_CI', mu_CI, ...
-        'rs_CI', rs_CI, 'rn_CI', rn_CI,'Yfull', Yfull, 'mat', mat);
+        'rs_CI', rs_CI, 'rn_CI', rn_CI);
 end
-display('Job completed.');
+
+display('BHM mcmc completed.');
 
 end
