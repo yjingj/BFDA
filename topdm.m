@@ -5,9 +5,9 @@ function [sigma] = topdm(sig)
 % POSITIVE DEFINITE SYMMETRIC MATRIX. 
 
 
-EPS =  (10^-5);      %SET THE VALUE TO PLACE INSTEAD OF ZERO OR NEGATIVE  
+EPS =  (10^-6);      %SET THE VALUE TO PLACE INSTEAD OF ZERO OR NEGATIVE  
                   %EIGENVALUES  
-ZERO = (10^-6);   %SET THE VALUE TO LOOK FOR 
+ZERO = (10^-7);   %SET THE VALUE TO LOOK FOR 
 
 sigma = sig; 
 [~, err] = cholcov(sigma, 0); %ERR<>0 MEANS SOME EIGENVALUES <=0 

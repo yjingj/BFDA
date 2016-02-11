@@ -1,4 +1,4 @@
-% Main function to call BHM_mcmc, BABF_mcmc, Regress
+%% Main function to call BHM_mcmc, BABF_mcmc, Regress
 %======
 %Input: 
 %======
@@ -13,28 +13,36 @@
 %=======
 %Output:  
 %=======  
-%      out_str:         a data struct that contains all returned values 
-% 
-%   To see the names for out_str, type names(out_str)
+%      out_smooth:         a data struct that contains all returned values
+%                           of smoothing and mean-covariance estimation 
+%      out_regress: data struct that contains all returned values of
+%      regression.
+%   To see the names for out_smooth, type names(out_smooth)
 %   To see an example, check with example_bfda.m
 %
-
-function [ out_str ] = BFDA(Y, T, param)
+%%
+function [ out_smooth, out_regress, param ] = BFDA(Y, T, param)
 
   if nargin == 2
     param = setOptions_bfda(); % set default parameter options
   end
   
     pgrid = sort(unique(cell2mat(T))); %pooled grid
+    p = length(pgrid);
+    param.m = min(p, param.m);
 
-    if param.babf 
-        tau = param.tau; % working grid
+    if strcmp(param.smethod, 'babf')
+        if isempty(param.tau)
+            param.tau = pgrid(1 : floor(p / (param.m-1)) : p);
+            % working grid
+        end
     else
-        tau = pgrid; % pooled grid
+        param.tau = pgrid; % pooled grid
     end
+    
 %% Obtain pre-smooth estimator for mean and covariance on either working grid for babf or pooled grid for bhm 
 
-if param.pace
+if ~strcmp(param.smethod, 'css') && param.pace
     % By PACE, add PACE path
     display('Run PACE to obtain pre-estimates for mean-covariance...')
     addpath(genpath(cat(2, pwd, '/PACErelease2.11')))
@@ -46,42 +54,78 @@ if param.pace
     out1 = getVal(pace_out, 'out1');
     pace_mu = getVal(pace_out, 'mu');
     
-    Phi_tau = interp1(out1', Phihat, tau, 'spline');
-    param.Sigma_est = topdm(Phi_tau * diag(lamhat) * Phi_tau'); % Make sure positive definite 
-    param.mu_est = interp1(out1', pace_mu, tau, 'spline');
-else
+    Phi_tau = interp1(out1', Phihat, param.tau, 'spline');
+    param.Sigma_est = Phi_tau * diag(lamhat) * Phi_tau'; % Make sure positive definite 
+    param.mu_est = interp1(out1', pace_mu, param.tau, 'spline');
+        
+elseif ~strcmp(param.smethod, 'css') && (isempty(param.Sigma_est) || isempty(param.mu_est) )
     % Run bspline smoothing on raw data and then calculate the pooled
     % mean-covariance
     display('Run SplineSmoothing to obtain smoothed functional data for pre-estimates for mean-covariance...')
     n = length(Y);
-    m = length(tau);
+    m = length(param.tau);
     Ysmooth = NaN(m, n);
     for i = 1:n
-        Ysmooth(:, i) = csaps(T{i}, Y{i}, [], tau);
+        Ysmooth(:, i) = csaps(T{i}, Y{i}, [], param.tau);
     end
-    param.Sigma_est = cov(Ysmooth'); % Make sure positive definite 
-    param.mu_est = mean(Ysmooth, 2);   
+    
+    if isempty(param.Sigma_est)
+        param.Sigma_est = cov(Ysmooth'); % Make sure positive definite
+    end
+    
+    if isempty(param.mu_est)
+        param.mu_est = mean(Ysmooth, 2);  
+    end
+    
+elseif strcmp(param.smethod, 'css')
+    display('CSS no need pre mean-covariance estimates.')
+    
 end
 
   %% smoothing and mean-covariance estimation
-  if param.babf
+  
+  if strcmp(param.smethod, 'babf')
       % with approximations by basis funcion
       display('Smoothing and estimation of functional data by BABF...')
-      [out_str] = babf_mcmc(Y, T, param.delta, param.Burnin, param.M, param.mat, ...
-          param.Sigma_est, param.mu_est, param.tau, param.p, ...
-          param.w, param.ws, param.c, param.nu, param.reg, pgrid);
       
-  else
-    % with BHM
-    display('Smoothing and estimation of functional data by BHM...')
-    [out_str] = bhm_mcmc(Y, T, param.delta, param.cgrid, param.Burnin, param.M, ...
+      [out_smooth] = babf_mcmc(Y, T, param.delta, param.Burnin, param.M, param.mat, ...
+          param.Sigma_est, param.mu_est, param.tau, ...
+          param.w, param.ws, param.c, param.nu, param.eval_grid);
+      
+  elseif strcmp(param.smethod, 'bhm')
+      display('Smoothing and estimation of functional data by BHM...')
+      [out_smooth] = bhm_mcmc(Y, T, param.delta, param.cgrid, param.Burnin, param.M, ...
                         param.mat, param.Sigma_est, param.mu_est, pgrid, param.nu, ...
                         param.c, param.w, param.ws);
+      
+  elseif strcmp(param.smethod, 'bgp')
+      display('Smoothing and estimation of functional data by BGP...')
+    [out_smooth] = bgp(Y, T, param.Burnin, param.M, ...
+                        param.mat, param.Sigma_est, param.mu_est,  ...
+                        param.c, param.w, param.ws, param.nu);
+                    
+  elseif strcmp(param.smethod, 'bfpca')
+      display('Smoothing and estimation of functional data by BFPCA...')
+    [out_smooth] = bfpca(Y, T, param.Burnin, param.M, ...
+                        param.Sigma_est, param.a, ...
+                        param.b, param.w);
+                    
+  elseif strcmp(param.smethod, 'css')
+    % with BHM
+    display('Smoothing and estimation of functional data by Cubic Smoothing Splines...')
+    [out_smooth] = css_gcv(Y, T, param.lamb_min, param.lamb_max, param.lamb_step);
+  else 
+      display('param.smethod has to be one of: babf, bhm, bgp, bfpca, css. ')
+    
   end
   
+  %% Regression 
+  
+  out_regress = {};
   if param.Regress
-      % regression 
+      
       display('Regression with smoothed functional data ... ')
+      [ out_regress ] = bregress();
       
   end
 

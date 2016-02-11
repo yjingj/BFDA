@@ -1,7 +1,4 @@
-function [output] = babf_mcmc(Y, T, delta, Burnin, M, mat, Sigma_tau, mu_tau_est, tau, p, w, ws, c, nu, reg, t_cgrid)
-
-% To incooperate functional data with uncommon grid, sparse data
- 
+% Bayesian process with approximation by cubic splines for random-grid data
 %% Inputs
  % Y: 1 by n cell array with raw data, each element is an observation;
  % T: 1 by n cell array with grids for Y;
@@ -11,107 +8,91 @@ function [output] = babf_mcmc(Y, T, delta, Burnin, M, mat, Sigma_tau, mu_tau_est
  % Sigma_tau, mu_tau, tau: mean/covariance estimate on grid tau
  % p: length of tau (work grid)
  % w, ws: decide hyper gamma priors
- % reg: regular code for pace
  % nu: order of smoothness in the Matern function; usually use 2.5
- % t_cgrid: the common grid that mean-covariance functions will be
+ % eval_grid: the common grid that mean-covariance functions will be
  % evaluated on.
- 
- 
- %% Outputs a structure with elements
- % Zt: Bayesian Signals Estimates (smoothed), cell of 1 by n;
+%% Outputs a structure with elements
+ % Zt: Bayesian Signals Estimates (smoothed) corresponding to T, cell of 1 by n;
  % Zeta: Coefficients estimates, p by n;
  % iK_tau, iK_zeta: Covariance matrix, p by p;
  % mu_tau, mu_zeta: curve mean on working grid tau, p by 1;
+ % Z_cgrid, iK_cgrid, mu_cgrid: signal, covariance, mean estiamtes on
+ %                              common eval_grid;
  % rn: \gamma_{noise}, noise precision;
  % rs: \sigma_s^2;
  % rho, nu: if using matern covariance function
- % Est_Sigma: \Sigma estimate by PACE
  % along with 95% credible intervals
  % Btau, BT: basis function evaluations on tau and T.
- 
-%%    
-addpath(genpath(cat(2, pwd, '/bspline')))  %include bspline package
+ % optknots: selected optimal knots for cubic splines
+%% 
+function [output] = babf_mcmc(Y, T, delta, Burnin, M, mat, Sigma_est, mu_est, tau, w, ws, c, nu, eval_grid)
 
-t = sort(unique(cell2mat(T)));
-% form the working grid
+%% working grid tau
 P = cellfun(@length, Y); % length of all observation grids
 n = size(Y, 2); % # of signals
-J = ones(p, 1);
+m = length(tau); % # of working grids
+J = ones(m, 1);
 D = abs(J * tau - tau' * J'); % distance matrix on the working grid tau
-p_cgrid = length(t_cgrid);
-
+p_cgrid = length(eval_grid);
+display(['eval_grid has length ', p_cgrid])
 
 %% MCMC sampling set up
-%delta = 5
-dm = delta + p - 1; %degrees of freedom for the inv-Wishart with delta
-dmp = n + delta + p; %degrees of freedom for the conditional posterior inv-Wishart with n+1+delta
-% c = 1; %Choose prior normal distribution for mean (arbitrarily)
 
-
-%% Covariance estimate with PACE
-if (isempty(Sigma_tau) || isempty(mu_tau_est))
-    tau = t(floor(linspace(1, length(t), p))); % work grid
-    addpath(genpath(cat(2, pwd, '/PACErelease2.11'))) %PACE package
-
-    param_X = setOptions('regular', reg, 'FVE_threshold',1,'corrPlot',0,'rho',-1); 
-    PCA_out= FPCA(Y, T, param_X);   %perform PCA on x, uncommon grid case
-
-    Phihat=getVal(PCA_out,'phi');  % The estimated Eigenfunctions.
-    lamhat=getVal(PCA_out,'lambda'); % The estimated eigenvalues.
-    out1 = getVal(PCA_out, 'out1');
-    Phi_tau = interp1(out1', Phihat, tau, 'spline');
-    Sigma_tau = Phi_tau*diag(lamhat)*Phi_tau'; 
-
-    mu_pca = getVal(PCA_out, 'mu');
-    mu_tau_est = interp1(out1', mu_pca, tau, 'spline')';
-else display('Run MCMC with given mean/covariance estimate on tau ... ')
-end
-
-Sigma_tau = topdm(Sigma_tau);
+%delta = 5; c = 1; %Choose prior normal distribution for mean (arbitrarily)
+dm = delta + m - 1; %degrees of freedom for the inv-Wishart with delta
+dmp = n + delta + m; %degrees of freedom for the conditional posterior inv-Wishart with n+1+delta
 
 %% Solve for rho and nu
 % by minimizing the MSE between A and Matern correlation matrix
 if (mat) 
     
-    A = COR(Sigma_tau);
+    A = COR(Sigma_est);
+    options = optimoptions('fmincon','Display','notify');
     
     if(isempty(nu))       
         myobj = @(x) mean(mean((A - Matern(D, x(1), x(2), 1)).^2)); 
-        [xx, fval] = fmincon(myobj, [1; 3], [], [], [], [], [1e-3; 2.5], [Inf; 100]);
+        [xx, fval] = fmincon(myobj, [1; 3], [], [], [], [], ...
+            [1e-3; 2.5], [Inf; 10], [],options);
         rho = xx(1);
         nu = xx(2);  
 
         if(isnan(rho) )
         display('solve for rho and nu failed, fix nu = 2.5')
         nu = 2.5;
-        [xx, fval] = fmincon(myobj, [1; nu], [], [], [], [], [1e-3; nu], [Inf; nu]);
+        [xx, fval] = fmincon(myobj, [1; nu], [], [], [], [], ...
+            [1e-3; nu], [Inf; nu], [],options);
         rho = xx(1);
         end
 
     else 
          myobj = @(x) mean(mean((A - Matern(D, x(1), x(2), 1)).^2)); 
          display('solve for rho with given value for nu')
-        [xx, fval] = fmincon(myobj, [1; nu], [], [], [], [], [1e-3; nu], [Inf; nu]);
+        [xx, fval] = fmincon(myobj, [1; nu], [], [], [], [], ...
+            [1e-3; nu], [Inf; nu], [],options);
         rho = xx(1);
     end
     
   display('using Matern correlation structure in the IW scale matrix');  
-  A = Matern(D, rho, nu, 1); 
-  display(['minimum L2 distance=', num2str(fval), '; rho = ', num2str(rho), '; nu = ', num2str(nu)]);
+  display([ '; rho = ', num2str(rho), '; nu = ', num2str(nu)]);
 
+  A = Matern(D, rho, nu, 1); 
+  
 else
     
-    A = Sigma_tau;
+    A = topdm(Sigma_est);
     display('using empirical estimated covariance structure in the IW scale matrix');
     
 end
 
 
-%%
+%% calculate basis functions on tau and T
+
+addpath(genpath(cat(2, pwd, '/bspline')))  %include bspline package
+
 optknots = optknt(tau, 4);
 Btau = bspline_basismatrix(4, optknots, tau);
 
-BT_cgrid = bspline_basismatrix(4, optknots, t_cgrid);
+BT_cgrid = bspline_basismatrix(4, optknots, eval_grid);
 
 BT = cell(1, n);
 for i = 1: n
@@ -119,14 +100,12 @@ for i = 1: n
 end 
 
 
-
-%%
-% Empirical estimates of noise variance and \sigma_s^2
+%% Empirical estimates of noise variance and \sigma_s^2
 
 func = @(x) sum(diff(x) .^ 2);
 snhat2 =  sum(cellfun(func, Y)) / (2 * sum(P - 1)); 
 rn = 1 / snhat2; % Sample estimated noise precision
-rs = (trace(Sigma_tau) - p * snhat2 ) / (trace(A) / (delta - 2)); 
+rs = (trace(Sigma_est) - m * snhat2 ) / (trace(A) / (delta - 2)); 
 
 display(['Initial Estimates: ', ' noise variance = ', num2str(snhat2), ...
     '; sigma_s^2 = ', num2str(rs)])
@@ -139,27 +118,21 @@ bs = 1 / ws; as = bs * rs;
 display([' a = ',num2str(a),'; b = ',num2str(w),'; as = ',num2str(as),'; bs = ',num2str(ws)])
 
 
-%%
-% dimension p by 1
-mu_tau_est = reshape(mu_tau_est, p, 1);
-mu0 = mu_tau_est; 
-mu_tau = mu_tau_est;
+%% Setup initial values
+
+mu_est = reshape(mu_est, m, 1);
+mu0 = mu_est; 
 
 rn = 1 / snhat2; % Sample estimated noise precision
-rs = (trace(Sigma_tau) - p * snhat2 ) / (trace(A) / (delta - 2)); 
+rs = (trace(Sigma_est) - m * snhat2 ) / (trace(A) / (delta - 2)); 
 
-Ztau = repmat(mu_tau, 1, n);
-Zt = cell(1, n);
+Zt = cell(1, n); 
+iK_tau = Sigma_est;
 
-% Sigma_tau = Matern(D, 0.5, 3.5, sf^2);
-% Sigma_tau = Phi_tau*diag(lamhat)*Phi_tau'; 
-iK_tau = Sigma_tau;
-K_tau = pinv(Sigma_tau);  % Covariance matrix Sigma on working grid
-
-efunc = @(x, y) sum((x - y).^2);
+sumsquare_func = @(x, y) sum((x - y).^2);
 
 % mean and covariance of coefficients zeta
-mu_zeta = Btau \ mu_tau_est; % p X 1 dimension
+mu_zeta = Btau \ mu_est; % p X 1 dimension
 iK_zeta = (Btau \ iK_tau) / Btau'; % p by p dimension
 K_zeta = pinv(iK_zeta); 
 
@@ -167,54 +140,51 @@ Zeta = repmat(mu_zeta, 1, n);
 mu0_zeta = Btau \ mu0;
 A_zeta = (Btau\A) / (Btau'); 
 
-%% assign memory ahead  to store MCMC samples
-mu_cgrid_Out = NaN(p_cgrid, M); % Mean vector over t_cgrid
-iK_cgrid_Out = NaN(p_cgrid, p_cgrid, M); % Covariance matrix over t_cgrid
-Zt_cgrid_Out = NaN(p_cgrid, n, M); % Signal mcmc samples over t_cgrid
+%% Assign memory ahead  to store MCMC samples
 
-mu_zeta_Out = NaN(p, M); % Mean vector of zeta 
-iK_zeta_Out = NaN(p, p, M); % Covariance matrix of zeta
-ZetaOut = NaN(p, n, M); % Zeta mcmc samples
+mu_cgrid_Out = NaN(p_cgrid, M); % Mean vector over eval_grid
+iK_cgrid_Out = NaN(p_cgrid, p_cgrid, M); % Covariance matrix over eval_grid
+Z_cgrid_Out = NaN(p_cgrid, n, M); % Signal mcmc samples over eval_grid
+
+mu_zeta_Out = NaN(m, M); % Mean vector of zeta 
+iK_zeta_Out = NaN(m, m, M); % Covariance matrix of zeta
+ZetaOut = NaN(m, n, M); % Zeta mcmc samples
 rnOut = NaN(1, M); % Precision of error, 1/noise-variance
 rsOut = NaN(1, M); % signal variance, \sigma_s^2
 
 %% Gibbs sampler
+
 display('Start MCMC') 
 
 for iter = 1 : (M + Burnin)    
 
     % update zeta/Z
         for i = 1:n
-           % SB = iK_zeta * BT{i}';
-           % BSB = BT{i} * SB;
-           % SBI = SB /(BSB + (1/rn) * eye(P(i)));
-           % mu_zeta_i = mu_zeta + SBI * (Y{i}' - BT{i} * mu_zeta);
-           % iK_zeta_i = iK_zeta * Btau' - SBI * SB'; 
-           
+          
            iK_zeta_i = pinv(BT{i}' * BT{i} * rn + K_zeta);
            mu_zeta_i = iK_zeta_i * (BT{i}' * Y{i}' * rn + K_zeta * mu_zeta);
             
-            Zeta(:, i) = mu_zeta_i + mychol(iK_zeta_i) * normrnd(0, 1, p, 1);
+            Zeta(:, i) = mu_zeta_i + mychol(iK_zeta_i) * normrnd(0, 1, m, 1);
             Zt{i} = (BT{i} * Zeta(:, i))'; % approximate Z_i(ti)
         end
         
     %update 1/(noise variance), rn   
-    rn = gamrnd(sum(P)/2 + a, 1/(b + sum(cellfun(efunc, Y, Zt)) / 2) );
+    rn = gamrnd(sum(P)/2 + a, 1/(b + sum(cellfun(sumsquare_func, Y, Zt)) / 2) );
     
     %update mu_zeta
     Mu_var = iK_zeta ./ (n + c);
     Mu_mean = (sum(Zeta, 2) + c .* mu0_zeta) ./ (n + c);    
-    mu_zeta = Mu_mean + mychol(Mu_var) * normrnd(0, 1, p, 1);
+    mu_zeta = Mu_mean + mychol(Mu_var) * normrnd(0, 1, m, 1);
     
     %update precision matrix K_zeta
     G = ((Zeta - repmat(mu_zeta, 1, n)) * (Zeta - repmat(mu_zeta, 1, n))' +...
         c .* (mu_zeta -  mu0_zeta) * (mu_zeta -  mu0_zeta)' + rs .* A_zeta);
-    [iK_zeta, K_zeta] = myiwishrnd(dmp, G, p);
+    [iK_zeta, K_zeta] = myiwishrnd(dmp, G, m);
     
      %update signal variance rs
      iK_tau = (Btau) * iK_zeta * (Btau') ;
      K_tau = pinv(iK_tau) ;
-     rs = gamrnd(p * dm/2 + as, 1/(bs + trace(A * K_tau) / 2));  
+     rs = gamrnd(m * dm/2 + as, 1/(bs + trace(A * K_tau) / 2));  
 
     % Save all MCMC samples   
     if iter > Burnin
@@ -226,7 +196,7 @@ for iter = 1 : (M + Burnin)
        
        mu_cgrid_Out(:, (iter - Burnin)) = BT_cgrid * mu_zeta;
        iK_cgrid_Out(:, :, (iter - Burnin)) = BT_cgrid * iK_zeta * BT_cgrid';
-       Zt_cgrid_Out(:, :, (iter - Burnin)) = (BT_cgrid * Zeta);
+       Z_cgrid_Out(:, :, (iter - Burnin)) = (BT_cgrid * Zeta);
        
     end
     
@@ -251,7 +221,7 @@ display('Calculating posterior sample means...');
 
 mu_cgrid = mean(mu_cgrid_Out(:, :), 2);
 iK_cgrid = mean(iK_cgrid_Out(:, :, :), 3);
-Zt_cgrid = mean(Zt_cgrid_Out(:, :, :), 3);
+Z_cgrid = mean(Z_cgrid_Out(:, :, :), 3);
 
 Zeta = mean(ZetaOut(:, :, :), 3); 
 iK_zeta = mean(iK_zeta_Out(:, :, :), 3);
@@ -272,7 +242,7 @@ Zeta_sort = sort(ZetaOut, 3);
 iK_zeta_sort = sort(iK_zeta_Out, 3); 
 mu_zeta_sort = sort(mu_zeta_Out, 2);
 
-Zt_cgrid_sort = sort(Zt_cgrid_Out, 3); 
+Z_cgrid_sort = sort(Z_cgrid_Out, 3); 
 iK_cgrid_sort = sort(iK_cgrid_Out, 3); 
 mu_cgrid_sort = sort(mu_cgrid_Out, 2);
 
@@ -288,8 +258,8 @@ iK_zeta_CL = iK_zeta_sort(:, :, q1);
 iK_zeta_UL = iK_zeta_sort(:, :, q2);
 mu_zeta_CI = [mu_zeta_sort(:, q1), mu_zeta_sort(:, q2)];
 
-Zt_cgrid_CL = Zt_cgrid_sort(:, :, q1);
-Zt_cgrid_UL = Zt_cgrid_sort(:, :, q2);
+Z_cgrid_CL = Z_cgrid_sort(:, :, q1);
+Z_cgrid_UL = Z_cgrid_sort(:, :, q2);
 iK_cgrid_CL = iK_cgrid_sort(:, :, q1);
 iK_cgrid_UL = iK_cgrid_sort(:, :, q2);
 mu_cgrid_CI = [mu_cgrid_sort(:, q1), mu_cgrid_sort(:, q2)];
@@ -298,33 +268,33 @@ rs_CI = [rs_sort(q1), rs_sort(q2)];
 rn_CI = [rn_sort(q1), rn_sort(q2)];
 
 
-%%
+%% outputs
 
 if(mat)
-    output = struct('tau', tau, 'Zt', {Zt}, 'iK_tau', iK_tau, 'iK_zeta_SE', iK_zeta_SE, ...
-    'mu_tau', mu_tau, 'mu_zeta', mu_zeta, 'mu_tau_est', mu_tau_est, 'rn', rn, 'rs', rs,...
-    'rho', rho, 'nu', nu, 'Sigma_tau', Sigma_tau, 'Zeta_CL', Zeta_CL, ...
+    output = struct('Zt', {Zt}, 'iK_tau', iK_tau, 'iK_zeta_SE', iK_zeta_SE, ...
+    'mu_tau', mu_tau, 'mu_zeta', mu_zeta, 'rn', rn, 'rs', rs,...
+    'rho', rho, 'nu', nu, 'Zeta_CL', Zeta_CL, ...
     'Zeta_UL', Zeta_UL, 'iK_zeta_CL', iK_zeta_CL, ...
     'iK_zeta_UL', iK_zeta_UL, 'mu_zeta_CI', mu_zeta_CI, ...
     'Btau', Btau, 'BT', {BT}, 'Zeta', Zeta, 'iK_zeta', iK_zeta, ...
-    'Zt_cgrid', Zt_cgrid, 'Zt_cgrid_CL', Zt_cgrid_CL, 'Zt_cgrid_UL', Zt_cgrid_UL, ...
+    'Z_cgrid', Z_cgrid, 'Z_cgrid_CL', Z_cgrid_CL, 'Z_cgrid_UL', Z_cgrid_UL, ...
     'iK_cgrid', iK_cgrid, 'iK_cgrid_CL', iK_cgrid_CL, 'iK_cgrid_UL', iK_cgrid_UL,...
-    'mu_cgrid', mu_cgrid, 'mu_cgrid_CI', mu_cgrid_CI, 't_cgrid', t_cgrid, ...
-    'rs_CI', rs_CI, 'rn_CI', rn_CI, 'mat', mat, 'optknots', optknots);
+    'mu_cgrid', mu_cgrid, 'mu_cgrid_CI', mu_cgrid_CI, ...
+    'rs_CI', rs_CI, 'rn_CI', rn_CI, 'optknots', optknots);
 else
-    output = struct('tau', tau, 'Zt', {Zt}, 'iK_tau', iK_tau, 'iK_zeta_SE', iK_zeta_SE, ...
-    'mu_tau', mu_tau, 'mu_zeta', mu_zeta, 'mu_tau_est', mu_tau_est, 'rn', rn, 'rs', rs,...
-    'Sigma_tau', Sigma_tau, 'Zeta_CL', Zeta_CL, ...
+    output = struct('Zt', {Zt}, 'iK_tau', iK_tau, 'iK_zeta_SE', iK_zeta_SE, ...
+    'mu_tau', mu_tau, 'mu_zeta', mu_zeta, 'rn', rn, 'rs', rs,...
+    'Zeta_CL', Zeta_CL, ...
     'Zeta_UL', Zeta_UL, 'iK_zeta_CL', iK_zeta_CL, ...
     'iK_zeta_UL', iK_zeta_UL, 'mu_zeta_CI', mu_zeta_CI, ...
     'Btau', Btau, 'BT', {BT}, 'Zeta', Zeta, 'iK_zeta', iK_zeta, ...
-    'Zt_cgrid', Zt_cgrid, 'Zt_cgrid_CL', Zt_cgrid_CL, 'Zt_cgrid_UL', Zt_cgrid_UL, ...
+    'Z_cgrid', Z_cgrid, 'Z_cgrid_CL', Z_cgrid_CL, 'Z_cgrid_UL', Z_cgrid_UL, ...
     'iK_cgrid', iK_cgrid, 'iK_cgrid_CL', iK_cgrid_CL, 'iK_cgrid_UL', iK_cgrid_UL,...
-    'mu_cgrid', mu_cgrid, 'mu_cgrid_CI', mu_cgrid_CI, 't_cgrid', t_cgrid, ...
-    'rs_CI', rs_CI, 'rn_CI', rn_CI, 'mat', mat, 'optknots', optknots);
+    'mu_cgrid', mu_cgrid, 'mu_cgrid_CI', mu_cgrid_CI, ...
+    'rs_CI', rs_CI, 'rn_CI', rn_CI, 'optknots', optknots);
 end
 
-display('Job completed.');
+display('BABF mcmc completed.');
 
 
 

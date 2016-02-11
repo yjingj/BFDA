@@ -102,13 +102,13 @@ if (mat)
     end
     
   display('Using Matern correlation structure in the IW scale matrix with:');  
-  display(['; rho = ', num2str(rho), '; nu = ', num2str(nu)]);
+  display(['rho = ', num2str(rho), '; nu = ', num2str(nu)]);
   
   A = Matern(D, rho, nu, 1); 
 
 else
     
-    A = Sigma_est;
+    A = topdm(Sigma_est);
     display('Using pre-estimated covariance structure in the IW scale matrix...');
     
 end
