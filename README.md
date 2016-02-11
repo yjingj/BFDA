@@ -1,7 +1,7 @@
 BFDA Matlab Toolbox
 ===================
 
-## Matlab toolbox for smoothing and estiamtion of functional data by a Bayesian hierarchial model
+## Matlab toolbox for smoothing, estiamtion, and regression of functional data by a Bayesian hierarchial model
 
 ### Main function to call
 - **BFDA.m**
