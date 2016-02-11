@@ -1,55 +1,35 @@
-SmoothingMatlabCode
+BFDA Matlab Toolbox
 ===================
 
-## Matlab code to smoothing functional data
+## Matlab toolbox for smoothing and estiamtion of functional data by a Bayesian hierarchial model
 
-### Grid approach related functions
-- **bhmcmc.m**
-Main function to implement MCMC
+### Main function to call
+- **BFDA.m**
+
+-- Smoothing and mean-covariance estimation
+
+-- Regression with single functional observation
+
+-- Regression with a batch of functional observations
 
 - **SimulationScript.m**
 Example simulation studies
 
-- **CaseStudyScript.m**
-Multiple case study script
-
-- **plot...m**
-Script to generate plots
-
-### Basis function approach related code
-
-### Regression related code
 
 ### Simulation related functions
-- **gaussian_sim.m**
-Function to generate simulated stationary functional data with Matern covariance.
+- **sim_gfd.m**
+Function to generate functional data with common/partial grids, stationary/nonstationary covariance.
 
-- **gaussian_simNS.m**
-Function to generate non-stationary functional data with covariance trasformed from a Matern class.
-
-### Other function used in the code
-- **Matern.m**
-Function to calculate Matern covariance given distance matrix.
-
-- **COR.m**
-Function to output correlation matrix given covariance matrix.
-
-- **rmse.m**
-Function to calculate RMSE.
-
-- **rimse.m**
-Function to calculate RIMSE.
-
-- **mychol.m**
-Function to output a matrix L such that LL' = input covariance matrix.
-
-- ** myiwishrnd.m **
-Function to generate sample matrix from a Inverse-Wishart distribution with given degrees of freedom, scale matrix, and dimension.
+- **sim_gfd_rgrid.m**
+Function to generate functional data with random grids, stationary/nonstationary covariance.
 
 ### Other Matlab Libraries used in the code
 
 - **PACErelease2.11/**
-PACE matlab package written by Yao et. al.
+Matlab toolbox for PACE, written by Yao et. al.
 
 - **mcmcdiag/**
-Matlab functions to diagonize MCMC convergence.
+Matlab toolbox for diagonizing MCMC convergence.
+
+- **bspline/**
+Matlab toolbox for implementing B-splines.
