@@ -12,8 +12,8 @@ BFDA Matlab Toolbox
 
 -- Regression with a batch of functional observations
 
-- **SimulationScript.m**
-Example simulation studies
+- **Examples/Example.m**
+Example simulation and analysis script.
 
 
 ### Simulation related functions
