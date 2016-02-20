@@ -1,127 +1,110 @@
 % close all
-% load('StationaryGauss.mat')
-
-%% Stationary Gaussian Data
-t = GausData.t;
-C = GausData.C;
-D = GausData.D;
-X0 = GausData.X0;
-Y0 = GausData.Y0;
-mut = GausData.mut;
-
-X = GausData.X;
-Y = GausData.Y;
-T = GausData.T;
-
-X_cgrid = GausData.X_cgrid;
-Y_cgrid = GausData.Y_cgrid;
-T_cgrid = GausData.T_cgrid;
-
+load('./Examples/Data/Simu_Data.mat')
+load('./Examples/Data/Simu_Output.mat')
 
 %%
-Z = BHM_cgrid.Z;  Z_CL = BHM_cgrid.Z_CL; Z_UL = BHM_cgrid.Z_UL;
-iK = BHM_cgrid.iK;
-mu = BHM_cgrid.mu;
-Yfull = BHM_cgrid.Yfull;
+n=30; p = 40; 
+pgrid = (0 : (pi/2)/(p-1) : (pi/2));
+eval_grid = (0 : (pi/2)/(p-1) : (pi/2));
+[xgrid,ygrid] = meshgrid(eval_grid); % 3D plots of the covariance matrices
 
-Z_sparse = BHM_sparse.Z; Zsparse_CL = BHM_sparse.Z_CL; Zsparse_UL = BHM_sparse.Z_UL;
-iK_sparse = BHM_sparse.iK;
-mu_sparse = BHM_sparse.mu;
-Yfull_sparse = BHM_sparse.Yfull;
-
-%% coverage probability
-
-Covprob(mut', BHM_cgrid.mu_CI(:, 1), BHM_cgrid.mu_CI(:, 2), 1)
-Covprob(X0, BHM_cgrid.Z_CL, BHM_cgrid.Z_UL, 2)
-Covprob(C, BHM_cgrid.iK_CL, BHM_cgrid.iK_UL, 2)
-
-Covprob(mut', BHM_sparse.mu_CI(:, 1), BHM_sparse.mu_CI(:, 2), 1)
-Covprob(X0, BHM_sparse.Z_CL, BHM_sparse.Z_UL, 2)
-Covprob(C, BHM_sparse.iK_CL, BHM_sparse.iK_UL, 2)
-
-
-
-
-%%
-addpath(genpath(cat(2, pwd, '/PACErelease2.11')))
-
-Phihat=getVal(PCA_cgrid,'phi');  % The estimated Eigenfunctions.
-snhat2=getVal(PCA_cgrid,'sigma'); % The estimated noise for X(t)
-lamhat=getVal(PCA_cgrid,'lambda'); % The estimated eigenvalues.
-pcx = getVal(PCA_cgrid,'xi_est');  % The estimated PC scores. 
-
-PCA_mu = getVal(PCA_cgrid, 'mu');
-PCA_Z = pcx * Phihat';
-Sigma_pace_cgrid=Phihat*diag(lamhat)*Phihat'; % The estimated covariance
-
-
-pcx_sparse = getVal(PCA_sparse, 'xi_est');  % The estimated PC scores. 
-Phihat_sparse=getVal(PCA_sparse,'phi');  % The estimated Eigenfunctions.
-snhat2_sparse=getVal(PCA_sparse,'sigma'); % The estimated noise for X(t)
-lamhat_sparse=getVal(PCA_sparse,'lambda'); % The estimated eigenvalues.
-
-PCA_mu_sparse = getVal(PCA_sparse, 'mu');
-PCA_Z_sparse = pcx_sparse * Phihat_sparse';
-Sigma_pace_sparse=Phihat_sparse*diag(lamhat_sparse)*Phihat_sparse'; % The estimated covariance
-
-
-
-%%
-rimse(t, X0, BHM_cgrid.Z, 0)
-rimse(t, mut, BHM_cgrid.mu', 0)
-rimse(t, C, BHM_cgrid.iK, 2)
-
-rmse(X0, Z)
-rmse(C, iK)
-rmse(mut, mu')
-
-rmse(X0, Z_sparse)
-rmse(C, iK_sparse)
-rmse(mut, mu_sparse')
-
-
-%%
 clims = [0, 1];
+xlims = [0, pi/2];
 
- h = figure();
-subplot_tight(3, 2, 1,  [.05])
-plot(t, Yfull(:, [1 25]), 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+
+%% set up data for stationary-cgrid-ucgrid plot
+
+Y_cgrid = reshape(cell2mat(GausFD_cgrid.Y), length(GausFD_cgrid.Y{1}), n);
+X_cgrid = reshape(cell2mat(GausFD_cgrid.X), length(GausFD_cgrid.X{1}), n);
+T_cgrid = reshape(cell2mat(GausFD_cgrid.T), length(GausFD_cgrid.T{1}), n);
+
+Yfull_cgrid = Y_cgrid;
+mu_sample_cgrid = nanmean(Yfull_cgrid, 2);
+
+
+Y_ucgrid = reshape(cell2mat(GausFD_ucgrid.Y), length(GausFD_ucgrid.Y{1}), n);
+X_ucgrid = reshape(cell2mat(GausFD_ucgrid.X), length(GausFD_ucgrid.X{1}), n);
+T_ucgrid = reshape(cell2mat(GausFD_ucgrid.T), length(GausFD_ucgrid.T{1}), n);
+
+Yfull_ucgrid = NaN(p, n); % n by p data matrix with nan's for unobserved data
+    for i = 1:n
+       Idx = find(ismember(pgrid, GausFD_ucgrid.T{i}));
+       Yfull_ucgrid(Idx, i) = GausFD_ucgrid.Y{i};
+    end
+mu_sample_ucgrid = nanmean(Yfull_ucgrid, 2);
+
+%% plot stationary functional data with common and uncommon grids
+
+leglocation='northeast';
+ylims = [-8, 8]; 
+
+h = figure();
+
+subplot_tight(2, 2, 1,  [.08])
+
+idx = [1];
+plot(T_cgrid(:, idx), Y_cgrid(:, idx), 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
 hold on
-plot(t, Z(:, [1 25]),  'k-', t, Z_CL(:, [1, 25]), 'k-.', t, Z_UL(:, [1, 25]), 'k-.', t, X0(:, [1, 25]), 'b.', 'LineWidth', 2,  'MarkerSize', 10)
-hold off
-xlim([0, pi/2])
-ylim([-8, 10])
-title('(a)', 'fontsize', 16);
-set(gca,'fontsize', 16)
+plot(T_cgrid(:, idx), X_cgrid(:, idx), 'r-.', eval_grid, out_cgrid.Z(:, idx), 'b-', eval_grid, out_cgrid.Z_CL(:, idx), 'b.', ...
+    eval_grid, out_cgrid.Z_UL(:, idx), 'b.', 'LineWidth', 2,  'MarkerSize', 10)
 
-subplot_tight(3, 2, 2,  [.05])
-plot(t, Yfull_sparse(:, [1, 25]), 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+[hleg1, hobj1] = legend('Sample', 'Truth', 'BHM', 'BHM 95% CI', 'Location', leglocation);
+
+idx = [6];
+plot(T_cgrid(:, idx), Y_cgrid(:, idx), 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+plot(T_cgrid(:, idx), X_cgrid(:, idx), 'r-.', eval_grid, out_cgrid.Z(:, idx), 'b-', eval_grid, out_cgrid.Z_CL(:, idx), 'b.', ...
+    eval_grid, out_cgrid.Z_UL(:, idx), 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+hold off
+xlim(xlims)
+ylim(ylims)
+title('(a) Functional data (common grids).', 'fontsize', 16);
+set(gca,'fontsize', 16)
+%set(hleg1,'FontSize',12, 'color','none')
+%legend boxoff
+
+
+subplot_tight(2, 2, 2,  [.08])
+
+idx = [1];
+plot(T_ucgrid(:, idx), Y_ucgrid(:, idx), 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
 hold on
-plot(t, Z_sparse(:, [1 25]),  'k-', t, Zsparse_CL(:, [1, 25]), 'k-.', t, Zsparse_UL(:, [1, 25]), 'k-.', t, X0(:, [1, 25]), 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+plot(T_ucgrid(:, idx), X_ucgrid(:, idx), 'r-.', eval_grid, out_ucgrid.Z(:, idx), 'b-', eval_grid, out_ucgrid.Z_CL(:, idx), 'b.', ...
+    eval_grid, out_ucgrid.Z_UL(:, idx), 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+
+idx = [6];
+plot(T_ucgrid(:, idx), Y_ucgrid(:, idx), 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+plot(T_ucgrid(:, idx), X_ucgrid(:, idx), 'r-.', eval_grid, out_ucgrid.Z(:, idx), 'b-', eval_grid, out_ucgrid.Z_CL(:, idx), 'b.', ...
+    eval_grid, out_ucgrid.Z_UL(:, idx), 'b.', 'LineWidth', 2,  'MarkerSize', 10)
 hold off
-title('(b)', 'fontsize', 16);
-xlim([0, pi/2])
-ylim([-8, 10])
+xlim(xlims)
+ylim(ylims)
+title('(b) Functional data (uncommon grids).', 'fontsize', 16);
 set(gca,'fontsize', 16)
 
-subplot_tight(3, 2, 3,  [.05])
-imagesc(t, t, COR(iK), clims)
-title('(c)', 'fontsize', 16);
+subplot_tight(2, 2, 3,  [.08])
+plot(eval_grid, mu_sample_cgrid, 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+hold on
+plot(eval_grid, GausFD_cgrid.mu_pgrid, 'r-.', 'LineWidth', 2);
+hold on
+plot(eval_grid, out_cgrid.mu,  'b-', eval_grid, out_cgrid.mu_CI, 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+
+hold off
+title('(c) Means (common grids).', 'fontsize', 16);
+xlim(xlims)
+ylim([-5, 5])
 set(gca,'fontsize', 16)
 
-subplot_tight(3, 2, 4,  [.05])
-imagesc(t, t, COR(iK_sparse), clims)
-title('(d)', 'fontsize', 16);
-set(gca,'fontsize', 16)
+subplot_tight(2, 2, 4,  [.08])
+plot(eval_grid, mu_sample_ucgrid, 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+hold on
+plot(eval_grid, GausFD_ucgrid.mu_pgrid, 'r-.', 'LineWidth', 2);
+hold on
+plot(eval_grid, out_ucgrid.mu,  'b-', eval_grid, out_ucgrid.mu_CI, 'b.', 'LineWidth', 2,  'MarkerSize', 10)
 
-subplot_tight(3, 2, 5,  [.05])
-imagesc(t, t, COR(cov(Yfull')), clims)
-title('(e)', 'fontsize', 16);
-set(gca,'fontsize', 16)
-
-subplot_tight(3, 2, 6,  [.05])
-imagesc(t, t, COR(C), clims)
-title('(f)', 'fontsize', 16);
+hold off
+title('(d) Means (uncommon grids).', 'fontsize', 16);
+xlim(xlims)
+ylim([-5, 5])
 set(gca,'fontsize', 16)
 
 
@@ -129,109 +112,316 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-print(h, '-dpdf', 'curves')
+print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/stat_sig'))
 
+%% plot covariance 
 
-%% 
+zlims = [-1, 8];
 
-
-
-
-
-
-
-
-%%
-
-[xgrid,ygrid]=meshgrid(GausData.t); % 3D plots of the covariance matrices
-
-h=figure();
-subplot(2, 2, 1)
-mesh(xgrid, ygrid, BHM_cgrid.iK)
-zlim([0, 5])
-title('Covariance estimate with BHM', 'fontsize', 16)
-set(gca,'fontsize', 16)
-
-subplot(2, 2, 2)
-mesh(xgrid, ygrid, Tprior_cgrid.iK)
-zlim([0, 5])
-title('Covariance estimate with t-folded prior', 'fontsize', 16)
-set(gca,'fontsize', 16)
-
-subplot(2, 2, 3)
-mesh(xgrid, ygrid, Matern_cgrid.iK)
-zlim([0, 5])
-title('Covariance estimate with Matern model', 'fontsize', 16)
-set(gca,'fontsize', 16)
-
-subplot(2, 2, 4)
-mesh(xgrid,ygrid,C)
-zlim([0, 5])
-title('True covariance', 'fontsize', 16)
-set(gca,'fontsize', 16)
-
-set(h, 'PaperOrientation','landscape');
-set(h, 'PaperUnits','normalized');
-set(h, 'PaperPosition', [0 0 1 1]);
-
-print(h, '-dpdf', 'matern_cov')
-
-%%
 h = figure();
-subplot(3, 2, 1)
-plot(t, Y0(:, 1:10), 'LineWidth', 2);
-xlim([0, pi/2])
-ylim([-8, 10])
-title(char('Functional data observed on common grid (non-sparse)'), 'fontsize', 16);
-xlabel('(a)','fontsize', 16)
+
+subplot_tight(2, 2, 1,  [.08,.08])
+mesh(xgrid, ygrid, out_cgrid.iK)
+zlim(zlims)
+title('(a) BHM covariance estimate (common grids).', 'fontsize', 16);
 set(gca,'fontsize', 16)
 
-subplot(3, 2, 2)
-plot(t, BHM_cgrid.Z(:, 1:10), 'LineWidth', 2);
-title(char('Signal estimates from BHM'), 'fontsize', 16);
-xlim([0, pi/2])
-ylim([-8, 10])
-xlabel('(c)','fontsize', 16)
+subplot_tight(2, 2, 2,  [.08,.08])
+mesh(xgrid, ygrid, out_ucgrid.iK)
+zlim(zlims)
+title('(b) BHM covariance estimate (uncommon grids).', 'fontsize', 16);
 set(gca,'fontsize', 16)
 
-subplot(3, 2, 3)
-plot(t, Tprior_cgrid.Z(:, 1:10), 'LineWidth', 2);
-title(char('Signal estimates with t-folded prior'), 'fontsize', 16);
-xlim([0, pi/2])
-ylim([-8, 10])
-xlabel('(d)','fontsize', 16)
+
+subplot_tight(2, 2, 3,  [.08,.08])
+mesh(xgrid, ygrid, cov(Yfull_cgrid'))
+zlim(zlims)
+title('(c) Sample covariance estimate (common grids).', 'fontsize', 16);
 set(gca,'fontsize', 16)
 
-subplot(3, 2, 4)
-plot(t, Matern_cgrid.Z(:, 1:10), 'LineWidth', 2);
-title(char('Signal estimates from Matern model'), 'fontsize', 16);
-xlim([0, pi/2])
-ylim([-8, 10])
-xlabel('(d)','fontsize', 16)
-set(gca,'fontsize', 16)
-
-subplot(3, 2, 5)
-plot(t, X0(:, 1:10), 'LineWidth', 2);
-title(char('True functional data'), 'fontsize', 16);
-xlim([0, pi/2])
-ylim([-8, 10])
-xlabel('(e)','fontsize', 16)
-set(gca,'fontsize', 16)
-
-subplot(3, 2, 6)
-plot(t, mut, 'K--', t, BHM_cgrid.mu, 'b-', t, Tprior_cgrid.mu, 'r-.', ...
-t, Matern_cgrid.mu, 'g-.', 'MarkerSize',20, 'LineWidth', 3)
-title(char('Functional mean'), 'fontsize', 16);
-xlim([0, pi/2])
-ylim([-8, 10])
-xlabel('(f)','fontsize', 16)
-%set(gca,'fontsize', 16)
-[hleg1, hobj1] = legend('True GP Mean', 'BHM',...
-    't-folded prior', 'Matern model', 'position', 'Best');
-set(hleg1, 'position', [.82 .22 0.01 .1],  'FontSize', 10) 
+subplot_tight(2, 2, 4,  [.08,.08])
+mesh(xgrid, ygrid,  GausFD_ucgrid.C)
+zlim(zlims)
+title('(d) True covariance (common/uncommon grids).', 'fontsize', 16);
 set(gca,'fontsize', 16)
 
 set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
-set(h, 'PaperPosition', [0 0 1 1]);
-print(h, '-dpdf', 'matern_curves')
+set(h, 'PaperPosition', [0 0 1.02 1]);
+
+print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/stat_cov'))
+
+
+%% set up data for Nonstationary-cgrid-ucgrid plot
+
+Y_cgrid_ns = reshape(cell2mat(GausFD_cgrid_ns.Y), length(GausFD_cgrid_ns.Y{1}), n);
+X_cgrid_ns = reshape(cell2mat(GausFD_cgrid_ns.X), length(GausFD_cgrid_ns.X{1}), n);
+T_cgrid_ns = reshape(cell2mat(GausFD_cgrid_ns.T), length(GausFD_cgrid_ns.T{1}), n);
+
+Yfull_cgrid_ns = Y_cgrid_ns;
+mu_sample_cgrid_ns = nanmean(Yfull_cgrid_ns, 2);
+
+
+Y_ucgrid_ns = reshape(cell2mat(GausFD_ucgrid_ns.Y), length(GausFD_ucgrid_ns.Y{1}), n);
+X_ucgrid_ns = reshape(cell2mat(GausFD_ucgrid_ns.X), length(GausFD_ucgrid_ns.X{1}), n);
+T_ucgrid_ns = reshape(cell2mat(GausFD_ucgrid_ns.T), length(GausFD_ucgrid_ns.T{1}), n);
+
+Yfull_ucgrid_ns = NaN(p, n); % n by p data matrix with nan's for unobserved data
+    for i = 1:n
+       Idx = find(ismember(pgrid, GausFD_ucgrid_ns.T{i}));
+       Yfull_ucgrid_ns(Idx, i) = GausFD_ucgrid_ns.Y{i};
+    end
+mu_sample_ucgrid_ns = nanmean(Yfull_ucgrid_ns, 2);
+
+%% plot stationary functional data with common and uncommon grids
+
+leglocation='southwest';
+ylims = [-15, 18]; 
+
+h = figure();
+
+subplot_tight(2, 2, 1,  [.08])
+
+idx = [1];
+plot(T_cgrid_ns(:, idx), Y_cgrid_ns(:, idx), 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+hold on
+plot(T_cgrid_ns(:, idx), X_cgrid_ns(:, idx), 'r-.', eval_grid, out_cgrid_ns.Z(:, idx), 'b-', ...
+    eval_grid, out_cgrid_ns.Z_CL(:, idx), 'b.', ...
+    eval_grid, out_cgrid_ns.Z_UL(:, idx), 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+
+[hleg1, hobj1] = legend('Sample', 'Truth', 'BHM', 'BHM 95% CI', 'Location', leglocation);
+
+idx = [6];
+plot(T_cgrid_ns(:, idx), Y_cgrid_ns(:, idx), 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+plot(T_cgrid_ns(:, idx), X_cgrid_ns(:, idx), 'r-.', eval_grid, out_cgrid_ns.Z(:, idx), 'b-', ...
+    eval_grid, out_cgrid_ns.Z_CL(:, idx), 'b.', ...
+    eval_grid, out_cgrid_ns.Z_UL(:, idx), 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+hold off
+xlim(xlims)
+ylim(ylims)
+title('(a) Functional data (common grids).', 'fontsize', 16);
+set(gca,'fontsize', 16)
+%set(hleg1,'FontSize',12, 'color','none')
+%legend boxoff
+
+
+subplot_tight(2, 2, 2,  [.08])
+
+idx = [1];
+plot(T_ucgrid_ns(:, idx), Y_ucgrid_ns(:, idx), 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+hold on
+plot(T_ucgrid_ns(:, idx), X_ucgrid_ns(:, idx), 'r-.', eval_grid, out_ucgrid_ns.Z(:, idx), 'b-',...
+    eval_grid, out_ucgrid_ns.Z_CL(:, idx), 'b.', ...
+    eval_grid, out_ucgrid_ns.Z_UL(:, idx), 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+
+idx = [10];
+plot(T_ucgrid_ns(:, idx), Y_ucgrid_ns(:, idx), 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+plot(T_ucgrid_ns(:, idx), X_ucgrid_ns(:, idx), 'r-.', eval_grid, out_ucgrid_ns.Z(:, idx), 'b-', ...
+    eval_grid, out_ucgrid_ns.Z_CL(:, idx), 'b.', ...
+    eval_grid, out_ucgrid_ns.Z_UL(:, idx), 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+hold off
+xlim(xlims)
+ylim([-11, 11])
+title('(b) Functional data (uncommon grids).', 'fontsize', 16);
+set(gca,'fontsize', 16)
+
+subplot_tight(2, 2, 3,  [.08])
+plot(eval_grid, mu_sample_cgrid_ns, 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+hold on
+plot(eval_grid, GausFD_cgrid_ns.mu_pgrid, 'r-.', 'LineWidth', 2);
+hold on
+plot(eval_grid, out_cgrid_ns.mu,  'b-', eval_grid, out_cgrid_ns.mu_CI, 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+
+hold off
+title('(c) Means (common grids).', 'fontsize', 16);
+xlim(xlims)
+ylim([-8, 8])
+set(gca,'fontsize', 16)
+
+subplot_tight(2, 2, 4,  [.08])
+plot(eval_grid, mu_sample_ucgrid_ns, 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+hold on
+plot(eval_grid, GausFD_ucgrid_ns.mu_pgrid, 'r-.', 'LineWidth', 2);
+hold on
+plot(eval_grid, out_ucgrid_ns.mu,  'b-', eval_grid, out_ucgrid_ns.mu_CI, 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+
+hold off
+title('(d) Means (uncommon grids).', 'fontsize', 16);
+xlim(xlims)
+ylim([-8, 8])
+set(gca,'fontsize', 16)
+
+set(h, 'PaperOrientation','landscape');
+set(h, 'PaperUnits','normalized');
+set(h, 'PaperPosition', [0 0 1.02 1]);
+
+print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/non_stat_sig'))
+
+%%
+zlims = [-1, 25];
+
+h = figure();
+
+subplot_tight(2, 2, 1,  [.08,.08])
+mesh(xgrid, ygrid, out_cgrid_ns.iK)
+zlim(zlims)
+title('(a) BHM covariance estimate (common grids).', 'fontsize', 16);
+set(gca,'fontsize', 16)
+
+subplot_tight(2, 2, 2,  [.08,.08])
+mesh(xgrid, ygrid, out_ucgrid_ns.iK)
+zlim(zlims)
+title('(b) BHM covariance estimate (uncommon grids).', 'fontsize', 16);
+set(gca,'fontsize', 16)
+
+
+subplot_tight(2, 2, 3,  [.08,.08])
+mesh(xgrid, ygrid, cov(Yfull_cgrid_ns'))
+zlim(zlims)
+title('(c) Sample covariance estimate (common grids).', 'fontsize', 16);
+set(gca,'fontsize', 16)
+
+subplot_tight(2, 2, 4,  [.08,.08])
+mesh(xgrid, ygrid,  GausFD_ucgrid_ns.C)
+zlim(zlims)
+title('(d) True covariance (common/uncommon grids).', 'fontsize', 16);
+set(gca,'fontsize', 16)
+
+set(h, 'PaperOrientation','landscape');
+set(h, 'PaperUnits','normalized');
+set(h, 'PaperPosition', [0 0 1.02 1]);
+
+print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/non_stat_cov'))
+
+
+%% Setup data for random grids case
+
+Y_rgrid = reshape(cell2mat(GausFD_rgrid.Y), length(GausFD_rgrid.Y{1}), n);
+X_rgrid = reshape(cell2mat(GausFD_rgrid.X), length(GausFD_rgrid.X{1}), n);
+T_rgrid = reshape(cell2mat(GausFD_rgrid.T), length(GausFD_rgrid.T{1}), n);
+
+Y_rgrid_ns = reshape(cell2mat(GausFD_rgrid_ns.Y), length(GausFD_rgrid_ns.Y{1}), n);
+X_rgrid_ns = reshape(cell2mat(GausFD_rgrid_ns.X), length(GausFD_rgrid_ns.X{1}), n);
+T_rgrid_ns = reshape(cell2mat(GausFD_rgrid_ns.T), length(GausFD_rgrid_ns.T{1}), n);
+
+
+%% plot stationary/nonstationary functional data with random grids
+
+leglocation='southwest';
+ylims = [-11, 11]; 
+
+h = figure();
+
+subplot_tight(2, 2, 1,  [.08])
+
+idx = [1];
+plot(T_rgrid(:, idx), Y_rgrid(:, idx), 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+hold on
+plot(T_rgrid(:, idx), X_rgrid(:, idx), 'r-.', eval_grid, out_rgrid.Z_cgrid(:, idx), 'b-', ...
+    eval_grid, out_rgrid.Z_cgrid_CL(:, idx), 'b.', ...
+    eval_grid, out_rgrid.Z_cgrid_UL(:, idx), 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+
+[hleg1, hobj1] = legend('Sample', 'Truth', 'BHM', 'BHM 95% CI', 'Location', leglocation);
+
+idx = [6];
+plot(T_rgrid(:, idx), Y_rgrid(:, idx), 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+plot(T_rgrid(:, idx), X_rgrid(:, idx), 'r-.', eval_grid, out_rgrid.Z_cgrid(:, idx), 'b-', ...
+    eval_grid, out_rgrid.Z_cgrid_CL(:, idx), 'b.', ...
+    eval_grid, out_rgrid.Z_cgrid_UL(:, idx), 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+hold off
+xlim(xlims)
+ylim(ylims)
+title('(a) Functional data (stationary).', 'fontsize', 16);
+set(gca,'fontsize', 16)
+%set(hleg1,'FontSize',12, 'color','none')
+%legend boxoff
+
+
+subplot_tight(2, 2, 2,  [.08])
+
+idx = [1];
+plot(T_rgrid_ns(:, idx), Y_rgrid_ns(:, idx), 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+hold on
+plot(T_rgrid_ns(:, idx), X_rgrid_ns(:, idx), 'r-.', eval_grid, out_rgrid_ns.Z_cgrid(:, idx), 'b-',...
+    eval_grid, out_rgrid_ns.Z_cgrid_CL(:, idx), 'b.', ...
+    eval_grid, out_rgrid_ns.Z_cgrid_UL(:, idx), 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+
+idx = [10];
+plot(T_rgrid_ns(:, idx), Y_rgrid_ns(:, idx), 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75]);
+plot(T_rgrid_ns(:, idx), X_rgrid_ns(:, idx), 'r-.', eval_grid, out_rgrid_ns.Z_cgrid(:, idx), 'b-', ...
+    eval_grid, out_rgrid_ns.Z_cgrid_CL(:, idx), 'b.', ...
+    eval_grid, out_rgrid_ns.Z_cgrid_UL(:, idx), 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+hold off
+xlim(xlims)
+ylim([-10, 13])
+title('(b) Functional data (nonstationary).', 'fontsize', 16);
+set(gca,'fontsize', 16)
+
+subplot_tight(2, 2, 3,  [.08])
+plot(GausFD_rgrid.T{1}, GausFD_rgrid.Mut{1}, 'r-.', 'LineWidth', 2);
+hold on
+plot(eval_grid, out_rgrid.mu_cgrid,  'b-', eval_grid, out_rgrid.mu_cgrid_CI, 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+
+hold off
+title('(c) Mean estimate (stationary).', 'fontsize', 16);
+xlim(xlims)
+ylim([-8, 8])
+set(gca,'fontsize', 16)
+
+subplot_tight(2, 2, 4,  [.08])
+plot(GausFD_rgrid_ns.T{1}, GausFD_rgrid_ns.Mut{1}, 'r-.', 'LineWidth', 2);
+hold on
+plot(eval_grid, out_rgrid_ns.mu_cgrid,  'b-', eval_grid, out_rgrid_ns.mu_cgrid_CI, 'b.', 'LineWidth', 2,  'MarkerSize', 10)
+
+hold off
+title('(d) Mean estimate (nonstationary).', 'fontsize', 16);
+xlim(xlims)
+ylim([-8, 8])
+set(gca,'fontsize', 16)
+
+set(h, 'PaperOrientation','landscape');
+set(h, 'PaperUnits','normalized');
+set(h, 'PaperPosition', [0 0 1.02 1]);
+
+print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/rand_sig'))
+
+%%
+zlims = [-1, 25];
+
+h = figure();
+
+subplot_tight(2, 2, 1,  [.08,.08])
+mesh(xgrid, ygrid, out_rgrid.iK_cgrid)
+zlim([-1, 6])
+title('(a) BHM covariance estimate (stationary).', 'fontsize', 16);
+set(gca,'fontsize', 16)
+
+subplot_tight(2, 2, 2,  [.08,.08])
+mesh(xgrid, ygrid, out_rgrid_ns.iK_cgrid)
+zlim(zlims)
+title('(b) BHM covariance estimate (nonstationary).', 'fontsize', 16);
+set(gca,'fontsize', 16)
+
+
+subplot_tight(2, 2, 3,  [.08,.08])
+mesh(xgrid, ygrid, GausFD_cgrid.C)
+zlim([-1, 6])
+title('(c) True covariance (stationary).', 'fontsize', 16);
+set(gca,'fontsize', 16)
+
+subplot_tight(2, 2, 4,  [.08,.08])
+mesh(xgrid, ygrid,  GausFD_cgrid_ns.C)
+zlim(zlims)
+title('(d) True covariance (nonstationary).', 'fontsize', 16);
+set(gca,'fontsize', 16)
+
+set(h, 'PaperOrientation','landscape');
+set(h, 'PaperUnits','normalized');
+set(h, 'PaperPosition', [0 0 1.02 1]);
+
+print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/rand_cov'))
+
+
+
+
+

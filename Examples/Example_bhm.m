@@ -14,6 +14,7 @@ rho = 1/2; % spacial scale parameter in matern function
 nu = 3.5; % order in matern function
 dense = 0.6; % proportion of observed data on the pooled grid
 
+stat=1; cgrid = 1; 
 load('./Examples/Data/SimulationData.mat')
 
 %% Stationary functional data on common grid
@@ -22,7 +23,7 @@ GausFD_cgrid = sim_gfd(pgrid, n, sf, snr, nu, rho, dense, cgrid, stat);
 
 % setup parameters for BFDA
 param = setOptions_bfda('cgrid', 1, 'mat', 1, 'babf', 0, ...
-    'M', 50, 'Burnin', 20);
+    'M', 5000, 'Burnin', 2000);
 
 % call BFDA
 out_cgrid =  BFDA(GausFD_cgrid.Y, GausFD_cgrid.T, param);
@@ -32,7 +33,7 @@ out_cgrid =  BFDA(GausFD_cgrid.Y, GausFD_cgrid.T, param);
 GausFD_ucgrid = sim_gfd(pgrid, n, sf, snr, nu, rho, dense, 0, stat);
 
 param_uc = setOptions_bfda('cgrid', 0, 'mat', 1, 'babf', 0, ...
-    'M', 50, 'Burnin', 20, 'pace', 0);
+    'M', 5000, 'Burnin', 2000, 'pace', 0);
 
 out_ucgrid =  BFDA(GausFD_ucgrid.Y, GausFD_ucgrid.T, param_uc);
 

@@ -5,8 +5,8 @@ reset(stream);  % set up a seed for simulation
 
 %% Set up parameters for simulation
 
-n = 10; % Number of functional curves
-p = 30; % Number of pooled grid points, or evaluated grid points
+n = 30; % Number of functional curves
+p = 40; % Number of pooled grid points, or evaluated grid points
 sf = sqrt(5); % singal standard deviation
 snr = 2; % signal to noise ratio
 rho = 1/2; % spacial scale parameter in matern function
@@ -28,16 +28,20 @@ GausFD_cgrid = sim_gfd(pgrid, n, sf, snr, nu, rho, dense, cgrid, stat);
 % setup parameters for BFDA
 % run with BHM
 param = setOptions_bfda('smethod', 'bhm', 'cgrid', 1, 'mat', 1, ...
-    'M', 50, 'Burnin', 20);
+    'M', 5000, 'Burnin', 2000, 'w', 1, 'ws', 1);
+
 % run with Bayesian Functional PCA
-param = setOptions_bfda('smethod', 'bfpca', 'M', 50, 'Burnin', 20);
+%param = setOptions_bfda('smethod', 'bfpca', 'M', 50, 'Burnin', 20);
+
 % run with standard Bayesian Gaussion Process model
-param = setOptions_bfda('smethod', 'bgp', 'mat', 1, 'M', 50, 'Burnin', 20);
+%param = setOptions_bfda('smethod', 'bgp', 'mat', 1, 'M', 50, 'Burnin', 20);
+
 % run with Cubic Smoothing Splines
-param = setOptions_bfda('smethod', 'css', 'mat', 1, 'M', 50, 'Burnin', 20, 'pace', 0);
+%param = setOptions_bfda('smethod', 'css', 'mat', 1, 'M', 50, 'Burnin', 20, 'pace', 0);
 
 % call BFDA
 [out_cgrid, out_regress, param ] =  BFDA(GausFD_cgrid.Y, GausFD_cgrid.T, param);
+
 
 %% Regression problem (to be continued ... )
 
@@ -45,36 +49,30 @@ param = setOptions_bfda('smethod', 'css', 'mat', 1, 'M', 50, 'Burnin', 20, 'pace
 %% Stationary functional data on uncommon grid
 GausFD_ucgrid = sim_gfd(pgrid, n, sf, snr, nu, rho, dense, 0, stat);
 
-param_uc = setOptions_bfda('cgrid', 0, 'mat', 1, 'babf', 0, ...
-    'M', 50, 'Burnin', 20, 'pace', 0);
+param_uc = setOptions_bfda('smethod', 'bhm', 'cgrid', 0, 'mat', 1, 'M', 5000, 'Burnin', 2000, 'pace', 1);
 
-[out_ucgrid, out_regress, param_uc ] =  BFDA(GausFD_ucgrid.Y, GausFD_ucgrid.T, param_uc);
-
+[out_ucgrid, out_regress, param_uc] =  BFDA(GausFD_ucgrid.Y, GausFD_ucgrid.T, param_uc);
 
 %% Non-stationary functional data on common grid
 GausFD_cgrid_ns = sim_gfd(pgrid, n, sf, snr, nu, rho, dense, cgrid, 0);
 
-param_ns = setOptions_bfda('cgrid', 1, 'mat', 0, 'babf', 0, ...
-    'M', 50, 'Burnin', 20, 'pace', 1);
+param_ns = setOptions_bfda('smethod', 'bhm', 'cgrid', 1, 'mat', 0, 'M', 5000, 'Burnin', 2000, 'pace', 1, 'ws', 1);
 
 [out_cgrid_ns, out_regress, param_ns ] =  BFDA(GausFD_cgrid_ns.Y, GausFD_cgrid_ns.T, param_ns);
-
 
 %% Non-stationary functional data on uncommon grid
 GausFD_ucgrid_ns = sim_gfd(pgrid, n, sf, snr, nu, rho, dense, 0, 0);
 
-param_uc_ns = setOptions_bfda('cgrid', 0, 'mat', 0, 'babf', 0, ...
-    'M', 50, 'Burnin', 20, 'pace', 1);
+param_uc_ns = setOptions_bfda('smethod', 'bhm', 'cgrid', 0, 'mat', 0, 'M', 5000, 'Burnin', 2000, 'pace', 1, 'ws', 0.01);
 
 [out_ucgrid_ns, out_regress, param_uc_ns ] =  BFDA(GausFD_ucgrid_ns.Y, GausFD_ucgrid_ns.T, param_uc_ns);
-
 
 %% Stationary functional data on random grids
 
 GausFD_rgrid = sim_gfd_rgrid(n, m, au, bu, sf, snr, nu, rho, stat);
 
-param_rgrid = setOptions_bfda('smethod', 'babf', 'cgrid', 0, 'mat', 1, ...
-    'M', 50, 'Burnin', 20, 'm', m, 'eval_grid', pgrid);
+param_rgrid = setOptions_bfda('smethod', 'babf', 'cgrid', 0, 'mat', 1, 'M', 5000, ...
+    'Burnin', 2000, 'm', m, 'eval_grid', pgrid, 'ws', 0.1);
 
 % call BFDA
 [out_rgrid, out_regress, param_rgrid]=  BFDA(GausFD_rgrid.Y, GausFD_rgrid.T, param_rgrid);
@@ -83,8 +81,8 @@ param_rgrid = setOptions_bfda('smethod', 'babf', 'cgrid', 0, 'mat', 1, ...
 
 GausFD_rgrid_ns = sim_gfd_rgrid(n, m, au, bu, sf, snr, nu, rho, 0);
 
-param_rgrid_ns = setOptions_bfda('smethod', 'babf', 'cgrid', 0, 'mat', 0, ...
-    'M', 50, 'Burnin', 20, 'm', m, 'eval_grid', pgrid);
+param_rgrid_ns = setOptions_bfda('smethod', 'babf', 'cgrid', 0, 'mat', 0, 'M', 5000, ...
+    'Burnin', 2000, 'm', m, 'eval_grid', pgrid, 'ws', 0.1);
 
 % call BFDA
 [out_rgrid_ns, out_regress, param_rgrid_ns] =  BFDA(GausFD_rgrid_ns.Y, GausFD_rgrid_ns.T, param_rgrid_ns);
@@ -92,14 +90,17 @@ C_ns = cov_ns(pgrid, sf, nu, rho);
 
 %% Calculate rmse 
 
-    rmse(out_cgrid.iKSE, GausFD_cgrid.C)
-    rmse(out_cgrid.Z, GausFD_cgrid.X0)
+rmse(out_cgrid.iKSE, GausFD_cgrid.C)
+rmse(out_cgrid.Z, GausFD_cgrid.X0)
     
 
 %% Save simulated data sets
 
-save('./Examples/Data/SimulationData.mat', 'GausFD_cgrid', 'GausFD_ucgrid', ...
-                           'GausFD_cgrid_ns', 'GausFD_ucgrid_ns')
+save('./Examples/Data/Simu_Data.mat', 'GausFD_cgrid', 'GausFD_ucgrid', ...
+                           'GausFD_cgrid_ns', 'GausFD_ucgrid_ns', ...
+                           'GausFD_rgrid', 'GausFD_rgrid_ns')
 
-
+save('./Examples/Data/Simu_Output.mat', 'out_cgrid', 'out_ucgrid', ...
+                           'out_cgrid_ns', 'out_ucgrid_ns', ...
+                           'out_rgrid', 'out_rgrid_ns')
 
