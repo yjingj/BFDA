@@ -17,11 +17,8 @@ sigma = sig;
 if (err ~= 0) 
     [v d] = eig(sigma); %CALCULATE EIGENVECTOR AND EIGENVALUES 
     d=diag(d);          %GET A VECTOR OF EIGENVALUES 
-
     d(d<ZERO)=EPS; %FIND ALL EIGENVALUES<=ZERO AND CHANGE THEM FOR EPS 
-     
     d=diag(d);      %CONVERT VECTOR d INTO A MATRIX 
-
     sigma = v*d*v'; %RECOMPOSE SIGMA MATRIX USING EIGENDECOMPOSITION 
                     %WHY? SIGMA IS SIMETRIC AND V IS ORTHONORMAL 
 end 

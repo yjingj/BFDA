@@ -6,14 +6,12 @@
 % rho: spacial scale parameter in matern function
 % stat: generate stationary data from matern function 1 or nonstationary 0
 % t ~ Uniform(au, bu)
+
 %=======Outputs
-% tau
-% X0
-% Y0
-% 'Y', cell of noise functional data
-% 'T', cell of observation grids 
-% 'Xtau', true signal on the workin grid tau
-% 'Mut', true mean function on pooled grid t
+% 'Xtrue_cell', cell of true functional data
+% 'Xraw_cell', cell of noise functional data
+% 'Tcell', cell of observation grids 
+% 'Mean_true_cell', true mean function on pooled grid t
 
 function [ simdata ] = sim_gfd_rgrid(n, m, au, bu, sf, snr, nu, rho, stat)
 
@@ -21,10 +19,10 @@ Ttemp = random('unif', au, bu, m, n); % generate random grids
 sn = sf/ snr;
 
 %% cells of  data
-T = cell(1, n); % Cell of grids
-Y = cell(1, n); % Cell of raw data
-X = cell(1, n); % Cell of true data
-Mut = cell(1, n); % True signal mean on pooled grid
+Tcell = cell(1, n); % Cell of grids
+Xraw_cell = cell(1, n); % Cell of raw data
+Xtrue_cell = cell(1, n); % Cell of true data
+Mean_true_cell = cell(1, n); % True signal mean on pooled grid
 
 C = zeros(m);
 J = ones(m, 1);
@@ -33,15 +31,15 @@ h = @(t)  t+1/2;
 for k = 1:n
 
    t = sort(Ttemp(:, k));
-   T{k} = t';
+   Tcell{k} = t';
   
    if stat
-       Mut{k} =  3 * sin(t * 4);
+       Mean_true_cell{k} =  3 * sin(t * 4);
        D = abs(J * t' - t * J');
        C = Matern(D, rho, nu, sf^2);
    else
        t2 = t .^ 1.5 ;
-       Mut{k} =  h(t) .* 3 .* sin(t2 .* 4);
+       Mean_true_cell{k} =  h(t) .* 3 .* sin(t2 .* 4);
        for i = 1 : m
             for j = 1 : m
                 C(i, j) = h(t(i)) * h(t(j)) * Matern(abs(t2(i) - t2(j)), rho, nu, sf^2); 
@@ -49,13 +47,13 @@ for k = 1:n
         end
    end
      
-   X{k} = mychol(C) * normrnd(0, 1, m, 1) + Mut{k}; % True signal, size v x n
-   Y{k}  = (X{k} + sn * normrnd(0, 1, m, 1))';
+   Xtrue_cell{k} = mychol(C) * normrnd(0, 1, m, 1) + Mean_true_cell{k}; % True signal, size v x n
+   Xraw_cell{k}  = (Xtrue_cell{k} + sn * normrnd(0, 1, m, 1))';
 
 end
 
 %%
-simdata = struct('X', {X}, 'Y', {Y}, 'T', {T}, 'Mut', {Mut});
+simdata = struct('Xtrue_cell', {Xtrue_cell}, 'Xraw_cell', {Xraw_cell}, 'Tcell', {Tcell}, 'Mean_true_cell', {Mean_true_cell});
 
 end
 

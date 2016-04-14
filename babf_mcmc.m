@@ -1,30 +1,38 @@
-% Bayesian process with approximation by cubic splines for random-grid data
+%% Author: Jingjing Yang (yjingj@gmail.com)
+% Main function to implement the MCMC algorithm for smoothing and estimation of
+%   functional data by BABF --- Bayesian process with approximation by cubic splines for random-grid data
 %% Inputs
  % Y: 1 by n cell array with raw data, each element is an observation;
  % T: 1 by n cell array with grids for Y;
  % delta: determins the degrees of freedom of IW is delta+p-1; usually use 5
  % Burnin, M : number of iterations for MCMC
  % mat: whether use Matern kernel in IWP
- % Sigma_tau, mu_tau, tau: mean/covariance estimate on grid tau
+ % Sigma_est, mu_est, tau: mean/covariance estimate on grid tau
+ % c: determine the prior for the mean function
  % p: length of tau (work grid)
  % w, ws: decide hyper gamma priors
  % nu: order of smoothness in the Matern function; usually use 2.5
  % eval_grid: the common grid that mean-covariance functions will be
  % evaluated on.
+
 %% Outputs a structure with elements
- % Zt: Bayesian Signals Estimates (smoothed) corresponding to T, cell of 1 by n;
- % Zeta: Coefficients estimates, p by n;
- % iK_tau, iK_zeta: Covariance matrix, p by p;
- % mu_tau, mu_zeta: curve mean on working grid tau, p by 1;
- % Z_cgrid, iK_cgrid, mu_cgrid: signal, covariance, mean estiamtes on
- %                              common eval_grid;
- % rn: \gamma_{noise}, noise precision;
- % rs: \sigma_s^2;
+ % Zt: Bayesian Signals Estimates (smoothed) corresponding to Tcell, cell of 1 by n;
+ % Zeta, Zeta_CL, Zeta_UL: Coefficients estimates, lower and upper 95% credible intervals;
+ % Sigma_tau: Covariance matrix of functional data on working grid tau;
+ % Sigma_zeta, Sigma_zeta_CL, Sigma_zeta_UL: Covariance matrix of basis function coefficients, lower and upper 95% credible intervals;
+ % mu_tau: curve mean on working grid tau;
+ % mu_zeta, nu_zeta_CI: mean of basis function coefficients, and 95% credible intervals;
+ % Z_cgrid, Sigma_cgrid, mu_cgrid: signal, covariance, mean estiamtes on
+ %                              the common eval_grid;
+ % Z_cgrid_CL, Z_cgrid_UL, Sigma_cgrid_CL, Sigma_cgrid_UL, mu_cgrid_CI: 95% credible itervals;
+ % rn, rn_CI: \gamma_{noise}, noise precision, and 95% credible iterval;
+ % rs, rs_CI: \sigma_s^2, and 95% credible iterval;
  % rho, nu: if using matern covariance function
  % along with 95% credible intervals
  % Btau, BT: basis function evaluations on tau and T.
- % optknots: selected optimal knots for cubic splines
+ % optknots: selected optimal knots by optknt() for constructing cubic B-splines
 %% 
+
 function [output] = babf_mcmc(Y, T, delta, Burnin, M, mat, Sigma_est, mu_est, tau, w, ws, c, nu, eval_grid)
 
 %% working grid tau
@@ -52,7 +60,7 @@ if (mat)
     if(isempty(nu))       
         myobj = @(x) mean(mean((A - Matern(D, x(1), x(2), 1)).^2)); 
         [xx, fval] = fmincon(myobj, [1; 3], [], [], [], [], ...
-            [1e-3; 2.5], [Inf; 10], [],options);
+            [1e-3; 2.5], [Inf; 4], [],options);
         rho = xx(1);
         nu = xx(2);  
 
@@ -78,8 +86,8 @@ if (mat)
   A = Matern(D, rho, nu, 1); 
   
 else
-    
-    A = topdm(Sigma_est);
+    A = Sigma_est;
+    %A = topdm(Sigma_est);
     display('using empirical estimated covariance structure in the IW scale matrix');
     
 end
@@ -89,7 +97,7 @@ end
 
 addpath(genpath(cat(2, pwd, '/bspline')))  %include bspline package
 
-optknots = optknt(tau, 4);
+optknots = optknt(tau, 4); % select optimal knots sequences for working grid tau
 Btau = bspline_basismatrix(4, optknots, tau);
 
 BT_cgrid = bspline_basismatrix(4, optknots, eval_grid);
@@ -271,25 +279,25 @@ rn_CI = [rn_sort(q1), rn_sort(q2)];
 %% outputs
 
 if(mat)
-    output = struct('Zt', {Zt}, 'iK_tau', iK_tau, 'iK_zeta_SE', iK_zeta_SE, ...
+    output = struct('Zt', {Zt}, 'Sigma_tau', iK_tau, 'Sigma_zeta_SE', iK_zeta_SE, ...
     'mu_tau', mu_tau, 'mu_zeta', mu_zeta, 'rn', rn, 'rs', rs,...
     'rho', rho, 'nu', nu, 'Zeta_CL', Zeta_CL, ...
-    'Zeta_UL', Zeta_UL, 'iK_zeta_CL', iK_zeta_CL, ...
-    'iK_zeta_UL', iK_zeta_UL, 'mu_zeta_CI', mu_zeta_CI, ...
-    'Btau', Btau, 'BT', {BT}, 'Zeta', Zeta, 'iK_zeta', iK_zeta, ...
+    'Zeta_UL', Zeta_UL, 'Sigma_zeta_CL', iK_zeta_CL, ...
+    'Sigma_zeta_UL', iK_zeta_UL, 'mu_zeta_CI', mu_zeta_CI, ...
+    'Btau', Btau, 'BT', {BT}, 'Zeta', Zeta, 'Sigma_zeta', iK_zeta, ...
     'Z_cgrid', Z_cgrid, 'Z_cgrid_CL', Z_cgrid_CL, 'Z_cgrid_UL', Z_cgrid_UL, ...
-    'iK_cgrid', iK_cgrid, 'iK_cgrid_CL', iK_cgrid_CL, 'iK_cgrid_UL', iK_cgrid_UL,...
+    'Sigma_cgrid', iK_cgrid, 'Sigma_cgrid_CL', iK_cgrid_CL, 'Sigma_cgrid_UL', iK_cgrid_UL,...
     'mu_cgrid', mu_cgrid, 'mu_cgrid_CI', mu_cgrid_CI, ...
     'rs_CI', rs_CI, 'rn_CI', rn_CI, 'optknots', optknots);
 else
-    output = struct('Zt', {Zt}, 'iK_tau', iK_tau, 'iK_zeta_SE', iK_zeta_SE, ...
+    output = struct('Zt', {Zt}, 'Sigma_tau', iK_tau, 'Sigma_zeta_SE', iK_zeta_SE, ...
     'mu_tau', mu_tau, 'mu_zeta', mu_zeta, 'rn', rn, 'rs', rs,...
     'Zeta_CL', Zeta_CL, ...
-    'Zeta_UL', Zeta_UL, 'iK_zeta_CL', iK_zeta_CL, ...
-    'iK_zeta_UL', iK_zeta_UL, 'mu_zeta_CI', mu_zeta_CI, ...
-    'Btau', Btau, 'BT', {BT}, 'Zeta', Zeta, 'iK_zeta', iK_zeta, ...
+    'Zeta_UL', Zeta_UL, 'Sigma_zeta_CL', iK_zeta_CL, ...
+    'Sigma_zeta_UL', iK_zeta_UL, 'mu_zeta_CI', mu_zeta_CI, ...
+    'Btau', Btau, 'BT', {BT}, 'Zeta', Zeta, 'Sigma_zeta', iK_zeta, ...
     'Z_cgrid', Z_cgrid, 'Z_cgrid_CL', Z_cgrid_CL, 'Z_cgrid_UL', Z_cgrid_UL, ...
-    'iK_cgrid', iK_cgrid, 'iK_cgrid_CL', iK_cgrid_CL, 'iK_cgrid_UL', iK_cgrid_UL,...
+    'Sigma_cgrid', iK_cgrid, 'Sigma_cgrid_CL', iK_cgrid_CL, 'Sigma_cgrid_UL', iK_cgrid_UL,...
     'mu_cgrid', mu_cgrid, 'mu_cgrid_CI', mu_cgrid_CI, ...
     'rs_CI', rs_CI, 'rn_CI', rn_CI, 'optknots', optknots);
 end

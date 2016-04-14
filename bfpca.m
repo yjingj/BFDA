@@ -30,7 +30,6 @@ n = size(Y, 2); % # of signals
 
 Ymat = reshape(cell2mat(Y), [p, n]); % noisy signal data
 
-% Sigma_est = topdm(Sigma_est);
 
 %% PCA with regard to Sigma_est
 

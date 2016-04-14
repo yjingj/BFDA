@@ -69,7 +69,7 @@ if (mat)
   A = Matern(D, rho, nu, 1); 
 
 else
-    A = topdm(Sigma_est);
+    A = Sigma_est; %A = topdm(Sigma_est);
     display('using empirical estimated covariance structure in the IW scale matrix');
     
 end

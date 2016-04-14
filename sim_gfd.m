@@ -15,11 +15,11 @@ function [simdata] = sim_gfd(pgrid, n, sf, snr, nu, rho, dense, cgrid, stat)
 % stat: stationary data 1, or non-stationary data 0
 
 %Outputs
-% 'X0', matrix of true data
-% 'Y', cell of noise functional data
-% 'X', cell of True data for uncommon grids, 
-% 'C', ture covariance matrix on pooled grid pgrid 
-% 'mu_pgrid', true mean on pooled grid pgrid
+% 'Xraw_cell', cell of noise functional data
+% 'Xtrue_cell', cell of True data for uncommon grids, 
+% 'Tcell', cell of observation grids,
+% 'Cov_true', ture covariance matrix on pooled grid pgrid 
+% 'Mean_true', true mean on pooled grid pgrid
 
 p = length(pgrid);
 sn = sf/ snr;
@@ -27,53 +27,53 @@ sn = sf/ snr;
 if stat
     J = ones(p, 1);
     D = abs(J * pgrid - pgrid' * J'); % Distance matrix for pgrid
-    C = Matern(D, rho, nu, sf^2); % Matern covariance function on pgrid
-    mu_pgrid = 3 * sin(pgrid * 4); % True signal mean on pgrid
+    Cov_true = Matern(D, rho, nu, sf^2); % Matern covariance function on pgrid
+    Mean_true = 3 * sin(pgrid * 4); % True signal mean on pgrid
 
 else
     t2 = pgrid .^ 1.5 ; % transform pooled grid
     h = @(t)  t+1/2; % define transform function
 
-    C = zeros(p); 
+    Cov_true = zeros(p); 
     for i = 1 : p
         for j = 1 : p
-            C(i, j) = h(pgrid(i)) * h(pgrid(j)) * Matern(abs(t2(i) - t2(j)), rho, nu, sf^2); 
+            Cov_true(i, j) = h(pgrid(i)) * h(pgrid(j)) * Matern(abs(t2(i) - t2(j)), rho, nu, sf^2); 
         end
     end
-    mu_pgrid = h(pgrid) .* 3 .* sin(4 .* t2); % True signal mean on pooled grid
+    Mean_true = h(pgrid) .* 3 .* sin(4 .* t2); % True signal mean on pooled grid
 end
 
 %% Gaussian functional data on common grid
 
-X0 = mychol(C) * normrnd(0, 1, p, n) + repmat(mu_pgrid', 1, n); % True signal, size p x n
-Y0 = X0 + sn * normrnd(0, 1, p, n); % Raw signall = Truth + Noisy
+Xmat_true = mychol(Cov_true) * normrnd(0, 1, p, n) + repmat(Mean_true', 1, n); % True signal, size p x n
+Xmat_raw = Xmat_true + sn * normrnd(0, 1, p, n); % Raw signall = Truth + Noisy
 
 %% 
 
-Y = cell(1, n); % Cell of raw data
-T = cell(1, n); % Cell of grids
-X = cell(1, n); % Cell of true data on corresponding grids
+Xraw_cell = cell(1, n); % Cell of raw data
+Tcell = cell(1, n); % Cell of grids
+Xtrue_cell = cell(1, n); % Cell of true data on corresponding grids
 
 if cgrid 
     % Create functional data with the common pooled grid
     for i = 1 : n
-        T{i} = pgrid;
-        X{i} = X0(:, i)';
-        Y{i} = Y0(:, i)';         
+        Tcell{i} = pgrid;
+        Xtrue_cell{i} = Xmat_true(:, i)';
+        Xraw_cell{i} = Xmat_raw(:, i)';         
     end 
 else
     % Create functional data with uncommon grid 
     for i = 1 : n
         Idx = sort(randsample(1:p, ceil(dense * p))); 
         % partial grid points are randomly sampled from the pooled grid
-        T{i} = pgrid(Idx); 
-        X{i} = X0(Idx, i)'; % True signal on uncommon grid
-        Y{i} = Y0(Idx, i)'; % Raw signal on uncommon grid   
+        Tcell{i} = pgrid(Idx); 
+        Xtrue_cell{i} = Xmat_true(Idx, i)'; % True signal on uncommon grid
+        Xraw_cell{i} = Xmat_raw(Idx, i)'; % Raw signal on uncommon grid   
     end 
 end
 
-simdata = struct('X0', X0, 'X', {X}, 'Y', {Y}, 'T', {T}, ...
-                        'C', C, 'mu_pgrid', mu_pgrid);
+simdata = struct('Xtrue_cell', {Xtrue_cell}, 'Xraw_cell', {Xraw_cell}, 'Tcell', {Tcell}, ...
+                        'Cov_true', Cov_true, 'Mean_true', Mean_true);
 
 end
 

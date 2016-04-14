@@ -6,32 +6,24 @@
  % Y: 1 by n cell array with raw data, each element is an observation;
  % T: 1 by n cell array with grids for Y;
  % delta: determins the degrees of freedom of IW is delta+p-1; usually use 5
- % cgrid = 2 denote common grid case; while cgrid =0 denotes uncommon grid
- % b: decide hyper gamma priors
+ % cgrid = 1 denote common grid case; while cgrid =0 denotes uncommon grid
  % Burnin, M : number of iterations for MCMC
- % mat: 2 menas matern sturcture for Psi, 0 uses PACE correlation estimate
- % Sigma_est: empirical covariance estimate
- % mu_p: empirical mean estimate on pooled grid
- % A: empirical correlation estimate
+ % mat: 1 menas matern sturcture for Psi, 0 uses PACE correlation estimate
+ % Sigma_est, mu_est: empirical covariance estimate and mean estimate
+ % pgrid: pooled grid
  % nu: order of smoothness in the Matern function; usually use 2.5
+ % c: determine the prior for the functional mean
  % w: scale the variance for the prior of sigma_s^2
  % ws: scale the variance for the prior of rn
  
 %% Outputs a structure with elements
- % t: pooled grid
- % Z: Bayesian Signals Estimates (smoothed), p by n;
- % iKSE: Sample covariance estimate with Bayesian smoothed data 
- % iK: Bayesian estimate of Covariance matrix, p by p;
- % mu: Bayesian estimate of curve mean, p by 1;
- % rn: Bayesian estimate of noise precision \gamma_{noise};
- % rs: Bayesian estimate of the scala in the scale matrix of IW distribution \sigma_s^2;
- % rho, nu: Empirical estimate of the spacial scale parameter and order if
- % mat is true
- % parameter in Matern function, if not given 
- % Sigma_est: empirical covariance estimate by PACE, if not given
- % Yfull: raw data in matrix form
- % mat: given by input
- % along with 95% credible intervals for all Bayesian estimates
+ % Z, Z_CL, Z_UL: Bayesian Signals Estimates (smoothed) on the pooled grid, and 95% credible intervals;
+ % Sigma, Sigma_CL, Sigma_UL: Bayesian estimate of Covariance matrix on the pooled grid, and 95% credible intervals;
+ % Sigma_SE: Sample covariance estimate with Bayesian smoothed data 
+ % mu, mu_CI: Bayesian estimate of curve mean on the pooled grid, and 95% credible intervals;
+ % rn, rn_CI: Bayesian estimate of noise precision \gamma_{noise};
+ % rs, rs_CI: Bayesian estimate of the scala in the scale matrix of IW distribution \sigma_s^2;
+ % rho, nu: Only return if mat is true, empirical estimate of the spacial scale parameter and order parameter in Matern function, if not given in the param structure 
  
 function [output] = bhm_mcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_est, pgrid, nu, c, w, ws)
 
@@ -81,7 +73,7 @@ if (mat)
     if(isempty(nu))       
         myobj = @(x) mean(mean((A - Matern(D, x(1), x(2), 1)).^2)); 
         [xx, fval] = fmincon(myobj, [1; 2.5], [], [], [], [], ...
-            [1e-3; 2.5], [Inf; 10], [],options);
+            [1e-3; 2.5], [Inf; 4], [],options);
         rho = xx(1);
         nu = xx(2);  
 
@@ -107,8 +99,8 @@ if (mat)
   A = Matern(D, rho, nu, 1); 
 
 else
-    
-    A = topdm(Sigma_est);
+    A = Sigma_est;
+    %A = topdm(Sigma_est);
     display('Using pre-estimated covariance structure in the IW scale matrix...');
     
 end
@@ -274,15 +266,15 @@ rn_CI = [rn_sort(q1), rn_sort(q2)];
 
 %%
 if(mat)
-    output = struct('Z', Z, 'iK', iK, 'iKSE', iKSE, ...
+    output = struct('Z', Z, 'Sigma', iK, 'Sigma_SE', iKSE, ...
         'mu', mu, 'rn', rn, 'rs', rs,'Z_CL', Z_CL, ...
-        'Z_UL', Z_UL, 'iK_CL', iK_CL, 'iK_UL', iK_UL, 'mu_CI', mu_CI, ...
+        'Z_UL', Z_UL, 'Sigma_CL', iK_CL, 'Sigma_UL', iK_UL, 'mu_CI', mu_CI, ...
         'rs_CI', rs_CI, 'rn_CI', rn_CI, ...
         'rho', rho, 'nu', nu);
 else
-    output = struct('Z', Z, 'iK', iK, 'iKSE', iKSE, ...
+    output = struct('Z', Z, 'Sigma', iK, 'Sigma_SE', iKSE, ...
         'mu', mu, 'rn', rn, 'rs', rs, 'Z_CL', Z_CL, ...
-        'Z_UL', Z_UL, 'iK_CL', iK_CL, 'iK_UL', iK_UL, 'mu_CI', mu_CI, ...
+        'Z_UL', Z_UL, 'Sigma_CL', iK_CL, 'Sigma_UL', iK_UL, 'mu_CI', mu_CI, ...
         'rs_CI', rs_CI, 'rn_CI', rn_CI);
 end
 

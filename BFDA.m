@@ -1,4 +1,7 @@
-%% Main function to call BHM_mcmc, BABF_mcmc, Regress
+%% Author: Jingjing Yang (yjingj@gmail.com)
+
+%% Main function to call BHM_mcmc, BABF_mcmc
+% Bayesian GP regression will be added later...
 %======
 %Input: 
 %======
@@ -7,21 +10,19 @@
 %      T:          1*n cell array, T{i} is the vector of dependent variable (e.g. time points) 
 %                    for the ith subject on which
 %                  corresponding measurements Y{i} are taken, i=1,...,n.
-%      param:          a struct obtained from setOptions.m sets the rest of arguments for BFDA.m
-%                  e.g.
+%      param:      a struct obtained from setOptions.m sets the rest of arguments for BFDA.m
+%                  e.g. 
 %                  >> param = setOptions_bfda();
 %=======
 %Output:  
 %=======  
 %      out_smooth:         a data struct that contains all returned values
 %                           of smoothing and mean-covariance estimation 
-%      out_regress: data struct that contains all returned values of
-%      regression.
 %   To see the names for out_smooth, type names(out_smooth)
 %   To see an example, check with example_bfda.m
 %
 %%
-function [ out_smooth, out_regress, param ] = BFDA(Y, T, param)
+function [ out_smooth, param ] = BFDA(Y, T, param)
 
   if nargin == 2
     param = setOptions_bfda(); % set default parameter options
@@ -33,7 +34,7 @@ function [ out_smooth, out_regress, param ] = BFDA(Y, T, param)
 
     if strcmp(param.smethod, 'babf')
         if isempty(param.tau)
-            param.tau = pgrid(1 : floor(p / (param.m-1)) : p);
+            param.tau = linspace(param.trange(1), param.trange(2), param.m);
             % working grid
         end
     else
@@ -119,16 +120,6 @@ end
     
   end
   
-  %% Regression 
-  
-  out_regress = {};
-  if param.Regress
-      
-      display('Regression with smoothed functional data ... ')
-      [ out_regress ] = bregress();
-      
-  end
-
 
 end
 

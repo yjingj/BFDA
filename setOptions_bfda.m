@@ -1,5 +1,4 @@
-%[param] = setOptions_bfda(varargin)
-% This function sets the optional input arguments for the functions bhmcmc(), babf_mcmc(), regress().
+% This function sets the optional input arguments for the functions bhmcmc(), babf_mcmc().
 % =====
 % Input: 
 % =====
@@ -29,13 +28,13 @@
 %      ex:
 %      >> showOptionNames_bfda()   %see what argument names you can define
 %                            %and their orders 
-%      >> param = setOptions_bfda(3,[],[3 3])
-%      means set bwmu = 3, bwmu_gcv =[] and bwxcov = [3 3]
+%      >> param = setOptions_bfda('bhm',[],1)
+%      means set smethod = 'bhm', cgrid = [], and mat = 1
 %      everything else will be using the default values
 %       
 % ======
 % Output: a struct array that contains all user-defined options 
-%           for functions bhmcmc(), babf_mcmc(), regress()..
+%           for functions bhmcmc(), babf_mcmc() ...
 % ======
 % 
 % See also showOptionNames_bfda, setVal_bfda, getVal_bfda
@@ -43,16 +42,17 @@
 function [param] = setOptions_bfda(varargin)
 
         %set default options
-        param = struct('smethod', 'bhm', 'Burnin', 2000, 'M', 5000, 'cgrid', 1, 'mat', 1, ...
+        param = struct('smethod', 'babf', 'Burnin', 2000, 'M', 10000, 'cgrid', 1, 'mat', 1, ...
             'Sigma_est', [], 'mu_est', [], 'nu', [],  ...
             'delta', 5, 'c', 1, 'w', 1, 'ws', 0.1, 'pace', 1, ...
-            'tau', [], 'Regress', 0 , 'm', 20, 'eval_grid', [], ...
+            'tau', [], 'Regress', 0 , 'm', 20, 'eval_grid', [], 'trange', [0, 1], ...
             'a', 0.001, 'b', 0.001, 'lamb_min', 0.9, 'lamb_max', 0.99, 'lamb_step', 0.01);
         
         if nargin > 0
             op_names = {'smethod', 'Burnin', 'M', 'cgrid', 'mat',  ...
             'Sigma_est', 'mu_est', 'nu',  ...
-            'delta',  'c', 'w', 'ws', 'pace', 'tau', 'Regress', 'm', 'eval_grid', ...
+            'delta',  'c', 'w', 'ws', 'pace', ...
+            'tau', 'Regress', 'm', 'eval_grid', 'trange', ...
             'a', 'b', 'lamb_min', 'lamb_max', 'lamb_step'};
         
             paramLen = length(struct2cell(param)); 
