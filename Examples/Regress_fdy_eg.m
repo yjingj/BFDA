@@ -50,29 +50,6 @@ Xraw_test = Xraw(:, samptest);
 rmse(Xtrue, Xsmooth)
 rmse(Xtrue, Xraw)
 
-%% Plot one sample curve
-i=3;
-h = figure();
-plot(GausFD_rgrid.T{i}, GausFD_rgrid.Y{i}, 'LineWidth', 2, 'Color', [0.75, 0.75, 0.75])
-hold on
-plot(pgrid, Xsmooth(:, i), 'r-',...
-        pgrid, Xraw(:, i), 'b--', pgrid, Xtrue(:, i), 'c:', ...
-        'LineWidth', 2, 'MarkerSize', 10)
-xlabel('t'); ylabel('x(t)');
-title('One Sample Curve')
-set(gca, 'fontsize', 16);
-[hleg, hobj] = legend('Raw Data', 'Bayesian Smoothed', 'Cubic Spline Smoothed', 'Truth', 'Location', 'Best');
-set(hleg, 'fontsize', 20);
-lobj = findobj(hobj, 'type', 'line');
-tobj = findobj(hobj, 'type', 'text');
-set(lobj, 'linewidth', 2); set(tobj, 'fontsize', 16)
-hold off
-
-set(h, 'PaperOrientation','landscape');
-set(h, 'PaperUnits','normalized');
-set(h, 'PaperPosition', [0 0 1.02 1]);
-
-print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/reg_sample_curve2'))
 
 
 %%  Generate functional responses
@@ -196,47 +173,7 @@ SigmaE = cov(resid');
 resid_raw = ymat_train_true - ymat_fitted_raw;
 SigmaE_raw = cov(resid_raw');
 
-%% Plot fitted output
-h=figure();
-i=5;
-plot(pgrid, ymat_fitted(:, i), 'r-', ...
-        pgrid, ymat_fitted_raw(:, i), 'b--', ...
-        pgrid, ymat_train_true(:, i), 'c:', 'MarkerSize', 16, 'LineWidth', 2)
-    
-xlabel('t'); ylabel('');
-title('Fitted Functional Response')
-set(gca, 'fontsize', 16);
-[hleg, hobj] = legend('Bayesian Smoothed', 'Cubic Spline Smoothed', 'Truth', 'Location', 'Best');
-set(hleg, 'fontsize', 20);
-lobj = findobj(hobj, 'type', 'line');
-tobj = findobj(hobj, 'type', 'text');
-set(lobj, 'linewidth', 2); set(tobj, 'fontsize', 16)
 
-set(h, 'PaperOrientation','landscape');
-set(h, 'PaperUnits','normalized');
-set(h, 'PaperPosition', [0 0 1.02 1]);
-
-print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/reg_fdy_fitted'))
-
-
-%% plot intercept function 
-h = figure();
-plot(pgrid, intercept, 'r-', pgrid, intercept_raw, 'b--', 'LineWidth', 2);
-xlabel('t');
-ylabel('');
-title('Intercept Function');
-set(gca, 'fontsize', 16);
-[hleg, hobj] = legend('Bayesian Smoothed', 'Cubic Spline Smoothed', 'Location', 'Best');
-set(hleg, 'fontsize', 20);
-lobj = findobj(hobj, 'type', 'line');
-tobj = findobj(hobj, 'type', 'text');
-set(lobj, 'linewidth', 2); set(tobj, 'fontsize', 16)
-
-set(h, 'PaperOrientation','landscape');
-set(h, 'PaperUnits','normalized');
-set(h, 'PaperPosition', [0 0 1.02 1]);
-
-print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/reg_fdy_intercept'))
 
 
 %%  recompute the analysis to get confidence limits
@@ -256,31 +193,6 @@ betastderrcell_raw = stderrStruct_raw.betastderr;
 
 intercept = getcoef(betastderrcell{1});
 intercept_raw = getcoef(betastderrcell_raw{1});
-
-%%  plot the temperature coefficient function
-h = figure();
-subplot(2, 1, 1)
-plotbeta(betaestcell{2}, betastderrcell{2})
-title('\beta(t) of Bayesian Smoothed Data')
-hold on 
-plot(pgrid, pgrid.^2, 'c:', 'Linewidth', 2)
-set(gca, 'fontsize', 16);
-hold off
-
-subplot(2, 1, 2)
-plotbeta(betaestcell_raw{2}, betastderrcell_raw{2})
-title('\beta(t) of Cubic Spline Smoothed Data')
-hold on 
-plot(pgrid, pgrid.^2, 'c:', 'Linewidth', 2)
-ylim([-1, 2.5])
-set(gca, 'fontsize', 16);
-hold off
-
-set(h, 'PaperOrientation','landscape');
-set(h, 'PaperUnits','normalized');
-set(h, 'PaperPosition', [0 0 1.02 1]);
-
-print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/reg_fdy_beta'))
 
 
 %%  predict test data 
@@ -305,29 +217,6 @@ ymat_test_pred_raw = eval_fd(pgrid, fRegressPred(xfd_raw_test_cell, betaestcell_
 
 display(['mse = ', num2str(mse(ymat_test_true, ymat_test_pred)), ...
     '; mse_raw = ',num2str(mse(ymat_test_true, ymat_test_pred_raw))])
-
-%% plot predict responses
-
-h=figure();
-i=2;
-plot(pgrid, ymat_test_pred(:, i), 'r-', ...
-        pgrid, ymat_test_pred_raw(:, i), 'b--', ...
-        pgrid, ymat_test_true(:, i), 'c:', 'MarkerSize', 16, 'LineWidth', 2)
-    
-xlabel('t'); ylabel('');
-title('Predicted Functional Response')
-set(gca, 'fontsize', 16);
-[hleg, hobj] = legend('Bayesian Smoothed', 'Cubic Spline Smoothed', 'Truth', 'Location', 'Best');
-set(hleg, 'fontsize', 20);
-lobj = findobj(hobj, 'type', 'line');
-tobj = findobj(hobj, 'type', 'text');
-set(lobj, 'linewidth', 2); set(tobj, 'fontsize', 16)
-
-set(h, 'PaperOrientation','landscape');
-set(h, 'PaperUnits','normalized');
-set(h, 'PaperPosition', [0 0 1.02 1]);
-
-print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/reg_fdy_pred'))
 
 
 

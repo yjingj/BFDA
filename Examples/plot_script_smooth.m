@@ -11,7 +11,6 @@ eval_grid = (0 : (pi/2)/(p-1) : (pi/2));
 clims = [0, 1];
 xlims = [0, pi/2];
 
-
 %% set up data for stationary-cgrid-ucgrid plot
 
 Xraw_cgrid = reshape(cell2mat(GausFD_cgrid.Xraw_cell), length(GausFD_cgrid.Xraw_cell{1}), n);
@@ -112,7 +111,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/stat_sig'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/stat_sig'))
 
 %% plot covariance 
 
@@ -149,7 +148,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/stat_cov'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/stat_cov'))
 
 
 %% set up data for Nonstationary-cgrid-ucgrid plot
@@ -255,7 +254,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/non_stat_sig'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/non_stat_sig'))
 
 %%
 zlims = [-1, 35];
@@ -291,7 +290,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/non_stat_cov'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/non_stat_cov'))
 
 
 %% Setup data for random grids case
@@ -383,7 +382,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/rand_sig'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/rand_sig'))
 
 %%
 zlims = [-1, 25];
@@ -419,7 +418,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/rand_cov'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/JSS_manuscript/Figures/rand_cov'))
 
 
 
