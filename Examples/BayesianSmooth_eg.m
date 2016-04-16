@@ -142,5 +142,5 @@ save('./Examples/Data/Simu_Output.mat', 'out_cgrid', 'out_ucgrid', ...
                        
 %% Make plots by calling plot_script_smooth.m
 close all;
-run('plot_script_smooth.m');
+run('./Examples/plot_script_smooth.m');
 
