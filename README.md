@@ -5,16 +5,13 @@ BFDA Matlab Toolbox
 
 ### Main function to call
 - **BFDA.m**
+-- Main function for smoothing and mean-covariance estimation.
 
--- Smoothing and mean-covariance estimation
+- **Examples/BayesianSmooth_eg.m**
+Example script calling BFDA().
 
--- Regression with single functional observation
-
--- Regression with a batch of functional observations
-
-- **Examples/Example.m**
-Example simulation and analysis script.
-
+- **Examples/FdRegress_eg.m**
+Example script calling fdaM regression functions with output from BFDA().
 
 ### Simulation related functions
 - **sim_gfd.m**
@@ -24,7 +21,6 @@ Function to generate functional data with common/partial grids, stationary/nonst
 Function to generate functional data with random grids, stationary/nonstationary covariance.
 
 ### Other Matlab Libraries used in the code
-
 - **PACErelease2.11/**
 Matlab toolbox for PACE, written by Yao et. al.
 
@@ -33,3 +29,7 @@ Matlab toolbox for diagonizing MCMC convergence.
 
 - **bspline/**
 Matlab toolbox for implementing B-splines.
+
+- **fdaM/**
+Matlab toolbox for standard functional data analysis.
+
