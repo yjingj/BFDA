@@ -3,7 +3,7 @@ BFDA Matlab Toolbox
 
 ## Matlab toolbox for Bayesian functional data analysis by a hierarchial model
 
-### Main function to call
+### Main function of BFDA
 - **BFDA.m**
 -- Main function for smoothing and mean-covariance estimation.
 
