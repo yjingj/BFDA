@@ -3,6 +3,12 @@
 stream = RandStream('twister','Seed', 2016);
 reset(stream);  % set up a seed for simulation
 
+%% add pathes of all source files of the required existing MATLAB libraries
+    addpath(genpath(cat(2, pwd, '/bspline')))
+    addpath(genpath(cat(2, pwd, '/fdaM'))) 
+    addpath(genpath(cat(2, pwd, '/mcmcdiag'))) 
+    addpath(genpath(cat(2, pwd, '/PACErelease2.11')))  
+
 % load('./Examples/Data/Simu_Data.mat')
 % load('./Examples/Data/Simu_Output.mat')
 

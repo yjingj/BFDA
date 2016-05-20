@@ -15,9 +15,7 @@ function h=subplot_tight(m,n,p,margins,varargin)
 % Issues & Comments: Note that if additional elements are used in order to be passed to subplot, margins parameter must
 %       be defined. For default margins value use empty element- [].      
 %
-% Author and Date:  Nikolay S. 29/03/2011. 
-% Last update:      Nikolay S. 21/04/2011 (accourding to Alan B comment).
-%
+
 % Usage example: h=subplot_tight((2,3,1:2,[0.5,0.2])
 
 if (nargin<4) || isempty(margins)

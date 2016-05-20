@@ -154,7 +154,6 @@ display('Ending MCMC...')
 
 
 %% MCMC diagnosis
- addpath(genpath(cat(2, pwd, '/mcmcdiag')))
  display(['Calculate Potential Scale Reduction Factor (PSRF)...']);
  display('PSRF < 1.2 means the MCMC chain mixed well and acheived convergence.');
  

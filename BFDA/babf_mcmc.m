@@ -93,10 +93,7 @@ else
 end
 
 
-%% calculate basis functions on tau and T
-
-addpath(genpath(cat(2, pwd, '/bspline')))  %include bspline package
-
+%% calculate basis functions on tau and T, using bspline package
 optknots = optknt(tau, 4); % select optimal knots sequences for working grid tau
 Btau = bspline_basismatrix(4, optknots, tau);
 
@@ -213,8 +210,7 @@ end
 display('End of MCMC ... ')
 
 
-%% MCMC diagnosis
- addpath(genpath(cat(2, pwd, '/mcmcdiag')))
+%% MCMC diagnosis using mcmcdiag library
  display(['Calculate Potential Scale Reduction Factor (PSRF)...']);
  display('PSRF < 1.2 means the MCMC chain mixed well and acheived convergence.');
  

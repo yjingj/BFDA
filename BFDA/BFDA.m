@@ -40,13 +40,12 @@ function [ out_smooth, param ] = BFDA(Y, T, param)
     else
         param.tau = pgrid; % pooled grid
     end
-    
+
 %% Obtain pre-smooth estimator for mean and covariance on either working grid for babf or pooled grid for bhm 
 
 if ~strcmp(param.smethod, 'css') && param.pace
-    % By PACE, add PACE path
+    % By PACE 
     display('Run PACE to obtain pre-estimates for mean-covariance...')
-    addpath(genpath(cat(2, pwd, '/PACErelease2.11')))
     param_pace = setOptions('regular',param.cgrid,'FVE_threshold',0.99,'corrPlot',0,'rho',-1);
     pace_out = FPCA(Y, T, param_pace); 
     

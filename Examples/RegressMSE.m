@@ -5,7 +5,7 @@ stream = RandStream('twister','Seed', 1234);
 reset(stream);  % set up a seed for simulation
 
 %% add fdaM path and load Bayesian smoothing output
-addpath(genpath(cat(2, pwd, '/fdaM')))
+addpath(genpath(cat(2, pwd, '/BFDA_SRC/fdaM')))
 load('./Examples/Data/Simu_Data.mat')
 load('./Examples/Data/Simu_Output.mat')
 

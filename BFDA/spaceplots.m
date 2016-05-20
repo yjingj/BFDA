@@ -28,8 +28,6 @@ function spaceplots(varargin)
 %NOTE: Please replace the default Matlab subplot.m file with the modified 
 %version available with SPACEPLOTS v3.0 for the function to work properly.
 %  
-%version 3.0
-%(c) Aditya Joshi, 2013
 
 
 %% Parse Inputs

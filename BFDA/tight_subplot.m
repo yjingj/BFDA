@@ -21,10 +21,6 @@ function ha = tight_subplot(Nh, Nw, gap, marg_h, marg_w)
 %           for ii = 1:6; axes(ha(ii)); plot(randn(10,ii)); end
 %           set(ha(1:4),'XTickLabel',''); set(ha,'YTickLabel','')
 
-% Pekka Kumpulainen 20.6.2010   @tut.fi
-% Tampere University of Technology / Automation Science and Engineering
-
-
 if nargin<3; gap = .02; end
 if nargin<4 || isempty(marg_h); marg_h = .05; end
 if nargin<5; marg_w = .05; end
