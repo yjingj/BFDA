@@ -5,7 +5,8 @@ stream = RandStream('twister','Seed', 1234);
 reset(stream);  % set up a seed for simulation
 
 %% add fdaM path and load Bayesian smoothing output
-addpath(genpath(cat(2, pwd, '/BFDA_SRC/fdaM')))
+addpath(genpath(cat(2, pwd, '/fdaM'))) % replace pwd by the directory of your MATLAB package
+
 load('./Examples/Data/Simu_Data.mat')
 load('./Examples/Data/Simu_Output.mat')
 
@@ -197,8 +198,18 @@ MSE_test(4, j) = mse(ymat_test_true, ymat_test_pred_raw);
 
 end
 
-%% average MSE and std
+%% average MSE (mean square error) and std (standard deviation)
+display('MSE of the fitted responses: Bayesian smoothed (scalar response), cubic spline smoothed (scalar response)')
+display('1) Bayesian smoothed (scalar response)')
+display('2) cubic spline smoothed (scalar response)')
+display('3) Bayesian smoothed (functional response)')
+display('4) cubic spline smoothed (functional response)')
 mean(MSE_fit, 2)
-mean(MSE_test, 2)
+
+display('std of the fitted responses')
 std(MSE_fit, 0, 2)
+
+display('MSE of the prediction responses')
+mean(MSE_test, 2)
+display('std of the prediction responses')
 std(MSE_test, 0, 2)

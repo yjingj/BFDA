@@ -1,7 +1,7 @@
 % Regression with smoothed functional data
 
 %% add fdaM path and load Bayesian smoothing output
-addpath(genpath(cat(2, pwd, '/BFDA_SRC/fdaM')))
+addpath(genpath(cat(2, pwd, '/fdaM'))) % replace pwd by the directory of your MATLAB package
 
 load('./Examples/Data/Simu_Data.mat')
 load('./Examples/Data/Simu_Output.mat')
@@ -297,4 +297,4 @@ display(['Functional resposnes prediction mse = ', ...
 
 %% Use plot_script_fdregress.m to make plots
 close all;
-run('plot_script_fdregress.m');
+run('./Examples/plot_script_fdregress.m');

@@ -3,7 +3,9 @@
 stream = RandStream('twister','Seed', 2016);
 reset(stream);  % set up a seed for simulation
 
-%% add pathes of all source files of the required existing MATLAB libraries
+%% Add pathes of the required MATLAB packages: BFDA, bspline, fdaM, mcmcdiag, PACE
+% replace pwd by the directory of your MATLAB packages
+    addpath(genpath(cat(2, pwd, '/BFDA')))
     addpath(genpath(cat(2, pwd, '/bspline')))
     addpath(genpath(cat(2, pwd, '/fdaM'))) 
     addpath(genpath(cat(2, pwd, '/mcmcdiag'))) 
@@ -51,8 +53,11 @@ param = setOptions_bfda('smethod', 'bhm', 'cgrid', 1, 'mat', 1, ...
 
 figure()
 plot(out_cgrid.Z)
+title('Smoothed functional data')
 figure()
 plot(out_cgrid.Sigma)
+title('Estimated functional covariance')
+
 
 %% Stationary functional data on uncommon grid
 GausFD_ucgrid = sim_gfd(pgrid, n, sf, snr, nu, rho, dense, 0, stat);
@@ -65,8 +70,10 @@ param_uc = setOptions_bfda('smethod', 'bhm', 'cgrid', 0, 'mat', 1, 'M',...
 
 figure()
 plot(out_ucgrid.Z)
+title('Smoothed functional data')
 figure()
 plot(out_ucgrid.Sigma)
+title('Estimated functional covariance')
 
 %% Non-stationary functional data on common grid
 GausFD_cgrid_ns = sim_gfd(pgrid, n, sf, snr, nu, rho, dense, cgrid, 0);
@@ -79,8 +86,10 @@ param_ns = setOptions_bfda('smethod', 'bhm', 'cgrid', 1, 'mat', 0, 'M',...
 
 figure()
 plot(out_cgrid_ns.Z)
+title('Smoothed functional data')
 figure()
 plot(out_cgrid_ns.Sigma)
+title('Estimated functional covariance')
 
 %% Non-stationary functional data on uncommon grid
 GausFD_ucgrid_ns = sim_gfd(pgrid, n, sf, snr, nu, rho, dense, 0, 0);
@@ -93,8 +102,10 @@ param_uc_ns = setOptions_bfda('smethod', 'bhm', 'cgrid', 0, 'mat', 0, ...
 
 figure()
 plot(out_ucgrid_ns.Z)
+title('Smoothed functional data')
 figure()
 plot(out_ucgrid_ns.Sigma)
+title('Estimated functional covariance')
 
 %% Stationary functional data on random grids
 GausFD_rgrid = sim_gfd_rgrid(n, m, au, bu, sf, snr, nu, rho, stat);
@@ -109,8 +120,10 @@ param_rgrid = setOptions_bfda('smethod', 'babf', 'cgrid', 0, 'mat', 1, ...
 
 figure()
 plot(out_rgrid.Z_cgrid)
+title('Smoothed functional data')
 figure()
 plot(out_rgrid.Sigma_cgrid)
+title('Estimated functional covariance')
 
 %% Nonstationary functional data on random grids
 GausFD_rgrid_ns = sim_gfd_rgrid(n, m, au, bu, sf, snr, nu, rho, 0);
@@ -125,15 +138,21 @@ param_rgrid_ns = setOptions_bfda('smethod', 'babf', 'cgrid', 0, 'mat', ...
 
 figure()
 plot(out_rgrid_ns.Z_cgrid)
+title('Smoothed functional data')
 figure()
 plot(out_rgrid_ns.Sigma_cgrid)
+title('Estimated functional covariance')
 
-%% Calculate rmse 
+%% Calculate RMSE (root mean squre error)
+display('RMSE of the estimated stationary covariance')
 rmse(out_cgrid.Sigma_SE, GausFD_cgrid.Cov_true)
+
+display('RMSE of the estimated functional data')
 Xtrue_mat = reshape(cell2mat(GausFD_cgrid.Xtrue_cell), p, n);
 rmse(out_cgrid.Z, Xtrue_mat)
 
 % calculate the true non-stationary covariance matrix
+display('RMSE of the estimated non-stationary covariance')
 Ctrue_ns = cov_ns(pgrid, sf, nu, rho);
 rmse(out_cgrid_ns.Sigma_SE, Ctrue_ns)
     
