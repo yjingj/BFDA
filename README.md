@@ -4,7 +4,7 @@ BFDA Matlab Toolbox
 
 ## Matlab toolbox for Bayesian functional data analysis by a hierarchical model
 
-### Required Existing MATLAB Libraries for using this toolbox (included)
+### Required existing MATLAB packages for using this toolbox (included)
 
 - **bspline/**
 Matlab toolbox for implementing B-splines, can be downloaded from http://www.mathworks.com/matlabcentral/fileexchange/27374-b-splines.
@@ -18,8 +18,8 @@ Matlab toolbox for diagonizing MCMC convergence, can be downloaded from http://b
 - **PACErelease2.11/**
 Matlab toolbox for PACE, written by Yao et. al, can be downloaded from http://www.stat.ucdavis.edu/PACE/download.html.
 
-### Add the path of required MATLAB libraries 
-For example, run the following script lines (replace pwd with the directory of your MATLAB libraries)
+### Add the path of required MATLAB packages 
+For example, run the following script lines (replace pwd with the directory of your MATLAB packages)
 ```
 	addpath(genpath(cat(2, pwd, '/BFDA')))
 	addpath(genpath(cat(2, pwd, '/bspline')))
