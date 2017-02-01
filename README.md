@@ -2,7 +2,7 @@
 BFDA Matlab Toolbox
 ===================
 
-## Matlab toolbox for Bayesian functional data analysis by a hierarchical model
+## Matlab toolbox for Bayesian functional data analysis using Gaussian-Wishart processes
 
 ### Required existing MATLAB packages for using this toolbox (included)
 
