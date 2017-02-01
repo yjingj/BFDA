@@ -1,4 +1,5 @@
-% Regression with smoothed functional data
+% Replicate the regression example as in FdRegress_eg.m for 
+% 100 times to calculate the mean square error of predictions.
 
 %% set a random seed
 stream = RandStream('twister','Seed', 1234);

@@ -1,13 +1,13 @@
-function [simdata] = sim_gfd(pgrid, n, sf, snr, nu, rho, dense, cgrid, stat)
+function [simdata] = sim_gfd(pgrid, n, s, r, nu, rho, dense, cgrid, stat)
 % Generate functional data (common-grid, or uncommon-grid) 
-% from Gaussion process with stationary matern covariance 
-% or nonstationary covariance (nonlinearly transformed matern)
+% from Gaussion process with stationary Matern covariance 
+% or nonstationary covariance (nonlinearly transformed Matern)
 
 %Inputs
 % pgrid: (1 X n) pooled grid
 % n: number of functional curves
-% sf: standard deviation of the signal
-% snr: signal to noise ratio
+% s: standard deviation of the signal
+% r: signal to noise ratio
 % nu: order in matern function
 % rho: spacial scale parameter in matern function 
 % dense: 0~1, the proportion of observed data on t
@@ -15,19 +15,19 @@ function [simdata] = sim_gfd(pgrid, n, sf, snr, nu, rho, dense, cgrid, stat)
 % stat: stationary data 1, or non-stationary data 0
 
 %Outputs
-% 'Xraw_cell', cell of noise functional data
-% 'Xtrue_cell', cell of True data for uncommon grids, 
+% 'Xraw_cell', cell of noisy functional data
+% 'Xtrue_cell', cell of true data, 
 % 'Tcell', cell of observation grids,
-% 'Cov_true', ture covariance matrix on pooled grid pgrid 
-% 'Mean_true', true mean on pooled grid pgrid
+% 'Cov_true', ture covariance matrix on pgrid 
+% 'Mean_true', true mean on pgrid
 
 p = length(pgrid);
-sn = sf/ snr;
+sn = s/ r;
 
 if stat
     J = ones(p, 1);
     D = abs(J * pgrid - pgrid' * J'); % Distance matrix for pgrid
-    Cov_true = Matern(D, rho, nu, sf^2); % Matern covariance function on pgrid
+    Cov_true = Matern(D, rho, nu, s^2); % Matern covariance function on pgrid
     Mean_true = 3 * sin(pgrid * 4); % True signal mean on pgrid
 
 else
@@ -37,7 +37,7 @@ else
     Cov_true = zeros(p); 
     for i = 1 : p
         for j = 1 : p
-            Cov_true(i, j) = h(pgrid(i)) * h(pgrid(j)) * Matern(abs(t2(i) - t2(j)), rho, nu, sf^2); 
+            Cov_true(i, j) = h(pgrid(i)) * h(pgrid(j)) * Matern(abs(t2(i) - t2(j)), rho, nu, s^2); 
         end
     end
     Mean_true = h(pgrid) .* 3 .* sin(4 .* t2); % True signal mean on pooled grid

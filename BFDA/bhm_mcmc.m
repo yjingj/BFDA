@@ -25,7 +25,7 @@
  % rs, rs_CI: Bayesian estimate of the scala in the scale matrix of IW distribution \sigma_s^2;
  % rho, nu: Only return if mat is true, empirical estimate of the spacial scale parameter and order parameter in Matern function, if not given in the param structure 
  
-function [output] = bhm_mcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_est, pgrid, nu, c, w, ws)
+function [output] = bhm_mcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_est, pgrid, nu, c, w, ws, resid_thin)
 
  %%                   
 p = length(pgrid); % length of the pooled grid
@@ -141,13 +141,17 @@ iKOut = NaN(p, p, M); % Covariance matrix
 ZOut = NaN(p, n, M); % Smoothed curve
 rnOut = NaN(1, M); % Precision of error, \gamma_n
 rsOut = NaN(1, M); % \sigma_s^2
+
+M_resid = length(1:resid_thin:M);
+residuals = NaN(p, n, M_resid);
+j = 1;
    
 %% Gibbs sampler
 
 display('Starting MCMC...') 
 
 for iter = 1 : (M + Burnin)    
-
+ 
     if ~cgrid       
         for i = 1:n          
             %mu3, V3 conditional mean/variance of Zi* | Zi, mu, \Sigma         
@@ -186,7 +190,13 @@ for iter = 1 : (M + Burnin)
          L = mychol(Zvar);
          Z = Zmean + L * normrnd(0, 1, p, n); 
     end
-
+    
+    save_residuals = (iter > Burnin) && (rem( (iter-Burnin), resid_thin) == 0);   
+    if save_residuals
+        residuals(:, :, j) = (Yfull - Z) .* sqrt(rn);
+        j = j+1;
+    end
+        
     %update 1/(noise variance), rn   
     rn = gamrnd(sum(P)/2 + a, 1/(b + nansum(nansum((Yfull - Z).^2))/2));
     
@@ -226,6 +236,23 @@ display('Ending MCMC...')
  display(['PSRF for Z(1,1) : ', num2str(psrf(reshape(ZOut(1, 1, :), M, 1)))]);
  display(['PSRF for Sigma(1,1) : ', num2str(psrf(reshape(iKOut(1, 1, :), M, 1)))]); 
  display(['PSRF for mu(1): ', num2str( psrf(muOut(1, :)'))]);
+
+  
+%% Goodness-of-fit diagnosis of the model
+display('Obtain P-value for testing the goodness-of-fit ... ');
+display('0.05 < P-value < 0.25 suggests there is some evidence of model inadequacy!');
+display('P-value < 0.05 suggests there is strong evidence of model inadequacy!');
+
+pmin_vec = NaN(1, n);
+
+for i = 1:n
+    residuals_i = reshape(residuals(:, i, :), p, 1, M_resid) ;
+    [pmin_vec(i), ~, ~] = pdm_test(residuals_i, 4, max(floor(M_resid/50), 1));
+end
+
+display(['Goodness-of-fit diagnosis P-value per functional curve: ', num2str(pmin_vec)]);
+display(['Number curves with some evidence of model inadequacy: ', num2str(sum(pmin_vec < 0.25/n))]);
+display(['Number curves with strong evidence of model inadequacy: ', num2str(sum(pmin_vec < 0.05/n))]);
 
 
 %% Calculate MCMC sample average
@@ -268,12 +295,12 @@ if(mat)
         'mu', mu, 'rn', rn, 'rs', rs,'Z_CL', Z_CL, ...
         'Z_UL', Z_UL, 'Sigma_CL', iK_CL, 'Sigma_UL', iK_UL, 'mu_CI', mu_CI, ...
         'rs_CI', rs_CI, 'rn_CI', rn_CI, ...
-        'rho', rho, 'nu', nu);
+        'rho', rho, 'nu', nu, 'residuals', residuals, 'pmin_vec', pmin_vec);
 else
     output = struct('Z', Z, 'Sigma', iK, 'Sigma_SE', iKSE, ...
         'mu', mu, 'rn', rn, 'rs', rs, 'Z_CL', Z_CL, ...
         'Z_UL', Z_UL, 'Sigma_CL', iK_CL, 'Sigma_UL', iK_UL, 'mu_CI', mu_CI, ...
-        'rs_CI', rs_CI, 'rn_CI', rn_CI);
+        'rs_CI', rs_CI, 'rn_CI', rn_CI, 'residuals', residuals, 'pmin_vec', pmin_vec);
 end
 
 display('BHM mcmc completed.');

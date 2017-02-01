@@ -1,10 +1,11 @@
 %======Inputs
-% n: # of observation, m: # of grids points for each observation
-% sf: standard deviation of the signal
-% snr: signal to noise ratio
-% nu: order in matern function
-% rho: spacial scale parameter in matern function
-% stat: generate stationary data from matern function 1 or nonstationary 0
+% n: # of observation, m: # of grid points for each observation
+% s: signal standard deviation 
+% r: signal to noise ratio
+% nu: smoothness order in the Matern function
+% rho: spatio scale parameter in the Matern function
+% stat: generate data from the stationary GP with value 1 
+%       or nonstationary GP with value 0
 % t ~ Uniform(au, bu)
 
 %=======Outputs
@@ -13,10 +14,10 @@
 % 'Tcell', cell of observation grids 
 % 'Mean_true_cell', true mean function on pooled grid t
 
-function [ simdata ] = sim_gfd_rgrid(n, m, au, bu, sf, snr, nu, rho, stat)
+function [ simdata ] = sim_gfd_rgrid(n, m, au, bu, s, r, nu, rho, stat)
 
 Ttemp = random('unif', au, bu, m, n); % generate random grids
-sn = sf/ snr;
+sn = s/ r;
 
 %% cells of  data
 Tcell = cell(1, n); % Cell of grids
@@ -36,13 +37,13 @@ for k = 1:n
    if stat
        Mean_true_cell{k} =  3 * sin(t * 4);
        D = abs(J * t' - t * J');
-       C = Matern(D, rho, nu, sf^2);
+       C = Matern(D, rho, nu, s^2);
    else
        t2 = t .^ 1.5 ;
        Mean_true_cell{k} =  h(t) .* 3 .* sin(t2 .* 4);
        for i = 1 : m
             for j = 1 : m
-                C(i, j) = h(t(i)) * h(t(j)) * Matern(abs(t2(i) - t2(j)), rho, nu, sf^2); 
+                C(i, j) = h(t(i)) * h(t(j)) * Matern(abs(t2(i) - t2(j)), rho, nu, s^2); 
             end
         end
    end

@@ -1,15 +1,16 @@
-% Regression with smoothed functional data
+% Regression with smoothed functional data by BFDA
 
-%% add fdaM path and load Bayesian smoothing output
+%% Add fdaM path and load the functional data
 addpath(genpath(cat(2, pwd, '/fdaM'))) % replace pwd by the directory of your MATLAB package
+addpath(genpath(cat(2, pwd, '/BFDA')))
 
 load('./Examples/Data/Simu_Data.mat')
 load('./Examples/Data/Simu_Output.mat')
 
-%%
+%% Set sample sizes, training data set, and test data set
 n = 30; % Number of functional curves
 p = 40; % Number of pooled grid points, or evaluated grid points
-au = 0; bu = pi/2; % domain of t
+au = 0; bu = pi/2; % Domain of t
 pgrid = (au : (bu)/(p-1) : bu); % Pooled grid
 trange = [au, bu];
 
@@ -25,12 +26,12 @@ Xraw = zeros(p, n);
 Xsmooth = zeros(p, n);
 
 if cgrid
-% functional observations of the common-grid case 
+% Functional observations with common grids 
     Xtrue = reshape(cell2mat(GausFD_cgrid.Xtrue_cell), p, n);
     Xsmooth = out_cgrid.Z(:, sampind);
     Xraw = reshape(cell2mat(GausFD_cgrid.Xraw_cell), p, n);
 else
-% functional observations of the random-grid case
+% Functional observations with random grids
     for i = 1:n
         xi = GausFD_rgrid.Xtrue_cell{i};
         xrawi = GausFD_rgrid.Xraw_cell{i};
@@ -54,10 +55,10 @@ Xraw_test = Xraw(:, samptest);
 rmse(Xtrue, Xsmooth)
 rmse(Xtrue, Xraw)
 
-%% response variables 
+%% Generate response variables  
 betamat = (pgrid') .^ 2 ;
 
-% scalar respones
+% Scalar respones
 deltat  = pgrid(2)-pgrid(1);
 Avec_true = deltat.*(Xtrue'*betamat    - ...
           0.5.*(Xtrue(1,    :)'.*betamat(1) + Xtrue(p,:)'.*betamat(p)) );
@@ -68,7 +69,7 @@ Avec_test = Avec(samptest);
 Avec_train_true = Avec_true(sampind);
 Avec_test_true = Avec_true(samptest);
 
-% functional responses
+% Functional responses
 ymat_true = Xtrue .* repmat(betamat, 1, n) ;
 ymat = ymat_true + normrnd(0, 1, p, n);
 
@@ -77,7 +78,7 @@ ymat_test = ymat(:, samptest);
 ymat_train_true = ymat_true(:, sampind);
 ymat_test_true = ymat_true(:, samptest);
 
-%%  set up xfd, yfd 
+%%  Set up functional data structure xfd, yfd for fdaM
 xnbasis = 20;
 xbasis = create_bspline_basis(trange, xnbasis, 4);
 
@@ -87,13 +88,13 @@ xfd_raw = smooth_basis(pgrid, Xraw_train, xbasis);
 [yfd_samp, df, gcv, beta, SSE, penmat, y2cMap, argvals, y] = ...
     smooth_basis(pgrid, ymat_train, xbasis);
 
-%%  ----  set up the curvetrure penalty operator  -------
+%%  ----  Set up the curvatrure penalty operator  -------
 conbasis = create_constant_basis(trange); %  create a constant basis
 wfd = fd([0, 1], conbasis);
 wfdcell = fd2cell(wfd);
 curvLfd = Lfd(2, wfdcell);
 
-% set up xfdcell
+% Set up xfdcell
 xfdcell = cell(1, 2);
 xfdcell{1} = fd(ones(1, n_train), conbasis);
 xfdcell{2} = xfd;
@@ -102,7 +103,7 @@ xfd_raw_cell = cell(1, 2);
 xfd_raw_cell{1} = fd(ones(1, n_train), conbasis);
 xfd_raw_cell{2} = xfd_raw;
 
-% set up betacell for scalar responses
+% Set up betacell for scalar responses
 betafd0 = fd(0, conbasis);
 bnbasis = 10;
 betabasis = create_bspline_basis(trange, bnbasis, 4);
@@ -112,14 +113,14 @@ betacell_vecy = cell(1, 2);
 betacell_vecy{1} = fdPar(betafd0);
 betacell_vecy{2} = fdPar(betafd1, curvLfd, 0);
 
-% set up betacell, yfd_par for functional responses
+% Set up betacell, yfd_par for functional responses
 betacell_fdy = cell(1, 2);
 betacell_fdy{1} = fdPar(betafd1, curvLfd, 0);
 betacell_fdy{2} = fdPar(betafd1, curvLfd, 0);
 
 yfd_par = fdPar(yfd_samp, curvLfd, 0);
 
-%%  compute cross-validated SSE's for a range of smoothing parameters 
+%%  Compute cross-validated SSE's for a range of smoothing parameters 
 %{
 wt = ones(1, length(sampind));
 lam = (0:0.1:1);
@@ -162,14 +163,14 @@ end
 lambda = 0.1;
 wt = ones(1, length(sampind));
 
-% --------- scalar responses
+% --------- Scalar responses
 betacell_vecy{2} = fdPar(betafd1, curvLfd, lambda);
 
 fRegressStruct_vecy = fRegress(Avec_train, xfdcell, betacell_vecy, wt);
 fRegressStruct_raw_vecy = ...
     fRegress(Avec_train, xfd_raw_cell, betacell_vecy, wt);
 
-% get coefficients
+% Get coefficients
 betaestcell_vecy   = fRegressStruct_vecy.betahat; 
 Avec_hat = fRegressStruct_vecy.yhat;
 intercept_vecy = getcoef(getfd(betaestcell_vecy{1}));
@@ -184,7 +185,7 @@ display(['Scalar reponses:', 'fitted mse = ', ...
     num2str(mse(Avec_train_true, Avec_hat)), ...
     '; fitted mse_raw = ',num2str(mse(Avec_train_true, Avec_hat_raw))])
 
-% compute Rsquare
+% Compute Rsquare
 covmat = cov([Avec_train, Avec_hat]);
 Rsqrd = covmat(1,2)^2/(covmat(1,1)*covmat(2,2));
 disp(['R-squared = ',num2str(Rsqrd)])
@@ -193,7 +194,7 @@ covmat_raw = cov([Avec_train, Avec_hat_raw]);
 Rsqrd_raw = covmat_raw(1,2)^2/(covmat_raw(1,1)*covmat_raw(2,2));
 disp(['raw R-squared = ',num2str(Rsqrd_raw)])
 
-%  compute sigma
+%  Compute sigma
 resid_vecy = Avec_train - Avec_hat;
 SigmaE_vecy = mean(resid_vecy.^2);
 disp(['Scalar responses: SigmaE = ',num2str(SigmaE_vecy)])
@@ -202,7 +203,7 @@ resid_raw_vecy = Avec_train - Avec_hat_raw;
 SigmaE_raw_vecy = mean(resid_raw_vecy.^2);
 disp(['Scalar responses: Raw SigmaE = ',num2str(SigmaE_raw_vecy)])
 
-% ---------- functional responses
+% ---------- Functional responses
 betacell_fdy{1} = fdPar(betafd1, curvLfd, lambda);
 betacell_fdy{2} = fdPar(betafd1, curvLfd, lambda);
 yfd_par = fdPar(yfd_samp, curvLfd, lambda);
@@ -226,7 +227,7 @@ ymat_fitted_raw = eval_fd(pgrid, yfd_hat_raw);
 display(['mse = ', num2str(mse(ymat_train_true, ymat_fitted)), ...
     '; mse_raw = ',num2str(mse(ymat_train_true, ymat_fitted_raw))])
  
-%  compute squared residual correlation
+%  Compute squared residual correlation
 resid_fdy = ymat_train_true - ymat_fitted;
 SigmaE_fdy = cov(resid_fdy');
 
@@ -234,7 +235,7 @@ resid_raw_fdy = ymat_train_true - ymat_fitted_raw;
 SigmaE_raw_fdy = cov(resid_raw_fdy');
 
 %%  recompute the analysis to get confidence limits
-% ------- scalar reponses
+% ------- Scalar responses
 stderrStruct_vecy = fRegress_stderr(fRegressStruct_vecy, eye(n_train), SigmaE_vecy);
 betastderrcell_vecy = stderrStruct_vecy.betastderr;
 
@@ -242,11 +243,11 @@ stderrStruct_raw_vecy = ...
     fRegress_stderr(fRegressStruct_raw_vecy, eye(n_train), SigmaE_raw_vecy);
 betastderrcell_raw_vecy = stderrStruct_raw_vecy.betastderr;
 
-%  constant  coefficient standard error:
+%  Constant  coefficient standard error:
 intercept_std_vecy = getcoef(betastderrcell_vecy{1});
 intercept_ste_raw_vecy = getcoef(betastderrcell_raw_vecy{1});
 
-% -------- functional responses
+% -------- Functional responses
 stderrStruct_fdy = fRegress_stderr(fRegressStruct_fdy, y2cMap, SigmaE_fdy);
 % fixed a bug in fRegress_stderr.m at line 124: 
 % bstderrfdj = data2fd(bstderrj, tfine, betabasisj); should be 
@@ -257,17 +258,17 @@ stderrStruct_raw_fdy = ...
     fRegress_stderr(fRegressStruct_raw_fdy, y2cMap, SigmaE_raw_fdy);
 betastderrcell_raw_fdy = stderrStruct_raw_fdy.betastderr;
 
-%  coefficient standard error:
+%  Coefficient standard error:
 intercept_std_fdy = eval_fd(pgrid, betastderrcell_fdy{1});
 intercept_std_raw_fdy = eval_fd(pgrid, betastderrcell_raw_fdy{1});
 
-%%  predict test data 
 
-%  set up xfd for test data
+%%  predict test data 
+%  Set up xfd for test data
 xfd_test = smooth_basis(pgrid, Xtest, xbasis);
 xfd_raw_test = smooth_basis(pgrid, Xraw_test, xbasis);
 
-% -------- scalar responses
+% -------- Scalar responses
 xfdcell_test = cell(1, 2);
 xfdcell_test{1} = fd(ones(1, n_test), conbasis);
 xfdcell_test{2} = xfd_test;
@@ -284,17 +285,17 @@ display(['Scalar responses predict mse = ', ...
     '; Scalar responses with raw data predict mse_raw = ',...
     num2str(mse(Avec_test_true, Avec_pred_raw))])
 
-% -------- functional responses
+% -------- Functional responses
 ymat_test_pred = ...
     eval_fd(pgrid, fRegressPred(xfdcell_test, betaestcell_fdy, xbasis));
 ymat_test_pred_raw = ...
     eval_fd(pgrid, fRegressPred(xfd_raw_test_cell, betaestcell_raw_fdy, xbasis));
 
-display(['Functional resposnes prediction mse = ', ...
+display(['Functional responses prediction mse = ', ...
     num2str(mse(ymat_test_true, ymat_test_pred)), ...
-    '; Functional resposnes prediction with Raw data mse_raw = ',...
+    '; Functional responses prediction with Raw data mse_raw = ',...
     num2str(mse(ymat_test_true, ymat_test_pred_raw))])
 
 %% Use plot_script_fdregress.m to make plots
 close all;
-run('./Examples/plot_script_fdregress.m');
+%run('./Examples/plot_script_fdregress.m');

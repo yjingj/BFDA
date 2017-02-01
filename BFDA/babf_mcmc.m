@@ -33,7 +33,7 @@
  % optknots: selected optimal knots by optknt() for constructing cubic B-splines
 %% 
 
-function [output] = babf_mcmc(Y, T, delta, Burnin, M, mat, Sigma_est, mu_est, tau, w, ws, c, nu, eval_grid)
+function [output] = babf_mcmc(Y, T, delta, Burnin, M, mat, Sigma_est, mu_est, tau, w, ws, c, nu, eval_grid, resid_thin)
 
 %% working grid tau
 P = cellfun(@length, Y); % length of all observation grids
@@ -42,7 +42,7 @@ m = length(tau); % # of working grids
 J = ones(m, 1);
 D = abs(J * tau - tau' * J'); % distance matrix on the working grid tau
 p_cgrid = length(eval_grid);
-display(['eval_grid has length ', p_cgrid])
+display(['eval_grid has length ', num2str(p_cgrid)]);
 
 %% MCMC sampling set up
 
@@ -136,6 +136,8 @@ iK_tau = Sigma_est;
 
 sumsquare_func = @(x, y) sum((x - y).^2);
 
+
+
 % mean and covariance of coefficients zeta
 mu_zeta = Btau \ mu_est; % p X 1 dimension
 iK_zeta = (Btau \ iK_tau) / Btau'; % p by p dimension
@@ -157,12 +159,21 @@ ZetaOut = NaN(m, n, M); % Zeta mcmc samples
 rnOut = NaN(1, M); % Precision of error, 1/noise-variance
 rsOut = NaN(1, M); % signal variance, \sigma_s^2
 
+M_resid = length(1:resid_thin:M);
+residuals = cell(n, M_resid);
+j = 0;
+
 %% Gibbs sampler
 
 display('Start MCMC') 
 
 for iter = 1 : (M + Burnin)    
 
+    save_residuals = (iter > Burnin) && (rem( (iter-Burnin), resid_thin) == 0);
+    if save_residuals 
+        j = j + 1;
+    end
+    
     % update zeta/Z
         for i = 1:n
           
@@ -171,11 +182,16 @@ for iter = 1 : (M + Burnin)
             
             Zeta(:, i) = mu_zeta_i + mychol(iK_zeta_i) * normrnd(0, 1, m, 1);
             Zt{i} = (BT{i} * Zeta(:, i))'; % approximate Z_i(ti)
+            if save_residuals
+                residuals{i, j} = (Y{i} - Zt{i}) .* sqrt(rn) ;
+                % residuals{i, j} = residuals{i, j} ./ std(residuals{i, j});
+            end
         end
+        
         
     %update 1/(noise variance), rn   
     rn = gamrnd(sum(P)/2 + a, 1/(b + sum(cellfun(sumsquare_func, Y, Zt)) / 2) );
-    
+
     %update mu_zeta
     Mu_var = iK_zeta ./ (n + c);
     Mu_mean = (sum(Zeta, 2) + c .* mu0_zeta) ./ (n + c);    
@@ -219,6 +235,24 @@ display('End of MCMC ... ')
  display(['PSRF for Zeta(1,1) : ', num2str(psrf(reshape(ZetaOut(1, 1, :), M, 1)))]);
  display(['PSRF for Sigma_zeta(1,1) : ', num2str(psrf(reshape(iK_zeta_Out(1, 1, :), M, 1)))]); 
  display(['PSRF for mu(1): ', num2str( psrf(mu_zeta_Out(1, :)'))]);
+ 
+ 
+%% Goodness-of-fit diagnosis of the model
+display('Obtain P-value for testing the goodness-of-fit ... ');
+display('0.05 < P-value < 0.25 suggests there is some evidence of model inadequacy!');
+display('P-value < 0.05 suggests there is strong evidence of model inadequacy!');
+
+pmin_vec = NaN(1, n);
+
+for i = 1:n
+    residuals_i = reshape(cell2mat(residuals(i, :)), P(i), 1, M_resid) ;
+    [pmin_vec(i), ~, ~] = pdm_test(residuals_i, 4, max(floor(M_resid/50), 1));
+end
+
+display(['Goodness-of-fit diagnosis P-value per functional curve: ', num2str(pmin_vec)]);
+display(['Number curves with some evidence of model inadequacy: ', num2str(sum(pmin_vec < 0.25/n))]);
+display(['Number curves with strong evidence of model inadequacy: ', num2str(sum(pmin_vec < 0.05/n))]);
+
  
 %% Calculate MCMC sample average
 display('Calculating posterior sample means...');
@@ -275,7 +309,7 @@ rn_CI = [rn_sort(q1), rn_sort(q2)];
 %% outputs
 
 if(mat)
-    output = struct('Zt', {Zt}, 'Sigma_tau', iK_tau, 'Sigma_zeta_SE', iK_zeta_SE, ...
+    output = struct('tau', tau, 'Zt', {Zt}, 'Sigma_tau', iK_tau, 'Sigma_zeta_SE', iK_zeta_SE, ...
     'mu_tau', mu_tau, 'mu_zeta', mu_zeta, 'rn', rn, 'rs', rs,...
     'rho', rho, 'nu', nu, 'Zeta_CL', Zeta_CL, ...
     'Zeta_UL', Zeta_UL, 'Sigma_zeta_CL', iK_zeta_CL, ...
@@ -284,9 +318,10 @@ if(mat)
     'Z_cgrid', Z_cgrid, 'Z_cgrid_CL', Z_cgrid_CL, 'Z_cgrid_UL', Z_cgrid_UL, ...
     'Sigma_cgrid', iK_cgrid, 'Sigma_cgrid_CL', iK_cgrid_CL, 'Sigma_cgrid_UL', iK_cgrid_UL,...
     'mu_cgrid', mu_cgrid, 'mu_cgrid_CI', mu_cgrid_CI, ...
-    'rs_CI', rs_CI, 'rn_CI', rn_CI, 'optknots', optknots);
+    'rs_CI', rs_CI, 'rn_CI', rn_CI, 'optknots', optknots, ...
+    'residuals', {residuals}, 'pmin_vec', pmin_vec);
 else
-    output = struct('Zt', {Zt}, 'Sigma_tau', iK_tau, 'Sigma_zeta_SE', iK_zeta_SE, ...
+    output = struct('tau', tau, 'Zt', {Zt}, 'Sigma_tau', iK_tau, 'Sigma_zeta_SE', iK_zeta_SE, ...
     'mu_tau', mu_tau, 'mu_zeta', mu_zeta, 'rn', rn, 'rs', rs,...
     'Zeta_CL', Zeta_CL, ...
     'Zeta_UL', Zeta_UL, 'Sigma_zeta_CL', iK_zeta_CL, ...
@@ -295,7 +330,7 @@ else
     'Z_cgrid', Z_cgrid, 'Z_cgrid_CL', Z_cgrid_CL, 'Z_cgrid_UL', Z_cgrid_UL, ...
     'Sigma_cgrid', iK_cgrid, 'Sigma_cgrid_CL', iK_cgrid_CL, 'Sigma_cgrid_UL', iK_cgrid_UL,...
     'mu_cgrid', mu_cgrid, 'mu_cgrid_CI', mu_cgrid_CI, ...
-    'rs_CI', rs_CI, 'rn_CI', rn_CI, 'optknots', optknots);
+    'rs_CI', rs_CI, 'rn_CI', rn_CI, 'optknots', optknots, 'residuals', {residuals}, 'pmin_vec', pmin_vec);
 end
 
 display('BABF mcmc completed.');

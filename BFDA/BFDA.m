@@ -34,7 +34,8 @@ function [ out_smooth, param ] = BFDA(Y, T, param)
 
     if strcmp(param.smethod, 'babf')
         if isempty(param.tau)
-            param.tau = linspace(param.trange(1), param.trange(2), param.m);
+            param.tau = prctile(pgrid, 0:(100/(param.m-1)):100);
+            %linspace(param.trange(1), param.trange(2), param.m);
             % working grid
         end
     else
@@ -90,13 +91,13 @@ end
       
       [out_smooth] = babf_mcmc(Y, T, param.delta, param.Burnin, param.M, param.mat, ...
           param.Sigma_est, param.mu_est, param.tau, ...
-          param.w, param.ws, param.c, param.nu, param.eval_grid);
+          param.w, param.ws, param.c, param.nu, param.eval_grid, param.resid_thin);
       
   elseif strcmp(param.smethod, 'bhm')
       display('Smoothing and estimation of functional data by BHM...')
       [out_smooth] = bhm_mcmc(Y, T, param.delta, param.cgrid, param.Burnin, param.M, ...
                         param.mat, param.Sigma_est, param.mu_est, pgrid, param.nu, ...
-                        param.c, param.w, param.ws);
+                        param.c, param.w, param.ws, param.resid_thin);
       
   elseif strcmp(param.smethod, 'bgp')
       display('Smoothing and estimation of functional data by BGP...')
@@ -113,7 +114,7 @@ end
   elseif strcmp(param.smethod, 'css')
     % with BHM
     display('Smoothing and estimation of functional data by Cubic Smoothing Splines...')
-    [out_smooth] = css_gcv(Y, T, param.lamb_min, param.lamb_max, param.lamb_step);
+    [out_smooth] = css_gcv(Y, T, param.lamb_min, param.lamb_max, param.lamb_step, param.cgrid);
   else 
       display('param.smethod has to be one of: babf, bhm, bgp, bfpca, css. ')
     
