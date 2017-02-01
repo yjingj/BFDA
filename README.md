@@ -40,10 +40,12 @@ Example script calling fdaM regression functions with output from BFDA().
 
 ### Simulation related functions
 - **BFDA/sim_gfd.m**
-Function to generate functional data with common/partial grids, stationary/nonstationary covariance.
+Function to generate Gaussian functional data with common/partial grids, stationary/nonstationary covariance.
 
 - **BFDA/sim_gfd_rgrid.m**
-Function to generate functional data with random grids, stationary/nonstationary covariance.
+Function to generate Gaussian functional data with random grids, stationary/nonstationary covariance.
 
+-**BFDA/sim_ngfd_rgrid.m**
+Function to generate Non-Gaussian functional data with random grids,  stationary/nonstationary covariance.
 
 
