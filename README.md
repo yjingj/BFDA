@@ -45,7 +45,7 @@ Function to generate Gaussian functional data with common/partial grids, station
 - **BFDA/sim_gfd_rgrid.m**
 Function to generate Gaussian functional data with random grids, stationary/nonstationary covariance.
 
--**BFDA/sim_ngfd_rgrid.m**
+- **BFDA/sim_ngfd_rgrid.m**
 Function to generate Non-Gaussian functional data with random grids,  stationary/nonstationary covariance.
 
 
