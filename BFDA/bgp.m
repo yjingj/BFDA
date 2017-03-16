@@ -11,19 +11,18 @@
  % c: scale of prior mean variance 
  % w, ws: scale the variance for the prior of sigma_s^2
  % nu: given order for matern function
- 
+ % tol: singular values < tol were set to 0 in pinv()
+  
  %% Outputs a structure with elements
- % Z: Bayesian Signals Estimates (smoothed), p by n;
- % iK: Bayesian estimate of Covariance matrix, p by p;
- % mu: Bayesian estimate of curve mean, p by 1;
- % rn: Bayesian estimate of noise precision \gamma_{noise};
- % rs: Bayesian estimate of the scala in the scale matrix of IW distribution \sigma_s^2;
+ % Z, Z_CL, Z_UL: Bayesian Signals Estimates and 95% credible interval (smoothed), p by n;
+ % mu, mu_CI: Bayesian estimate of curve mean, p by 1;
+ % rn, rn_CI: Bayesian estimate and 95% credible interval of noise precision \gamma_{noise};
+ % lambda, lambda_CI: Bayesian estiamte and 95% credible interval
  % rho, nu: Empirical estimate of the spacial scale parameter and order if
- % lambda: Bayesian estiamte
- % along with 95% credible intervals for all Bayesian estimates
+ % Sigma_est: Input covariance estimate, p by p;
 
 %%
-function [output] = bgp(Y, T, Burnin, M, mat, Sigma_est, mu_est, c, w, ws, nu)
+function [output] = bgp(Y, T, Burnin, M, mat, Sigma_est, mu_est, c, w, ws, nu, tol)
                
 pgrid = sort(unique(cell2mat(T))); %pooled grid
 p = length(pgrid); % length of the pooled grid
@@ -81,10 +80,9 @@ func = @(x) sum(diff(x) .^ 2);
 snhat2 =  sum(cellfun(func, Y)) / (2 * n * (p - 1)); 
 rn = 1 / snhat2;
 
-lambda = (trace(Sigma_est) - p * snhat2 ) / trace(A);
+lambda = trace(A) / (trace(Sigma_est) - p * snhat2 );
 
-display(['Initial Estimates: ', ' noise variance = ', num2str(snhat2),'; sigma_s^2 = ', num2str(lambda)])
-lambda = 1/lambda; % precision
+display(['Initial Estimates: ', ' noise variance = ', num2str(snhat2),'; sigma_s^2 = ', num2str(1/lambda)]);
 
 % Determine hyper-priors
 b = 1 / w; a = b * rn;
@@ -97,8 +95,9 @@ display(['Hyper-prior parameters: ', ' a = ', num2str(a), '; b = ', num2str(b),.
 mu = nanmean(Yfull, 2); % Sample mean
 mu0 = reshape(mu_est, p, 1);
 
+iA = pinv(A, tol);
 Sigma = A ./ lambda;
-K = pinv(Sigma);
+K = iA .* lambda; %pinv(Sigma);
 
 
 %% assign memory ahead
@@ -116,7 +115,7 @@ display('Starting MCMC...')
 for iter = 1 : (M + Burnin)    
 
          iZvar = (K + rn .* I);
-         Zvar = pinv(iZvar);
+         Zvar = pinv(iZvar, tol);
          Zmean = (iZvar) \ (rn .* Yfull + repmat(K * mu, 1, n)); 
          L = mychol(Zvar);
          Z = Zmean + L * normrnd(0, 1, p, n); 
@@ -131,13 +130,18 @@ for iter = 1 : (M + Burnin)
     mu = Mu_mean + L * normrnd(0, 1, p, 1);
    
     %update signal precision lambda 
-    lambda = gamrnd((p*n)/2 + as + p, ...
-        1/(bs + trace(((Z- repmat(mu, 1, n))' /A) * (Z - repmat(mu, 1, n)))/ 2 +...
-        trace(c .* ((mu - mu0)' / A) * (mu - mu0))/2)); 
+    %lambda = gamrnd((p*n)/2 + as + p, ...
+    %    1/(bs + trace(((Z- repmat(mu, 1, n))' /A) * (Z - repmat(mu, 1, n))) / 2 +...
+    %    trace(c .* ((mu - mu0)' / A) * (mu - mu0))/2)); 
+
+
+    lambda = gamrnd((p*n)/2 + as + p/2, ...
+        1/(bs + trace((Z- repmat(mu, 1, n))' * iA * (Z - repmat(mu, 1, n))) / 2 +...
+        c * trace((mu - mu0)' * iA * (mu - mu0))/2));
     
     %update signal precision matrix K
     Sigma = A ./ lambda;
-    K = pinv(Sigma);
+    K = iA .* lambda; % pinv(Sigma); 
     
     % Save all MCMC samples   
     if iter > Burnin
@@ -191,16 +195,17 @@ rn_CI = [rn_sort(q1), rn_sort(q2)];
 
 %%
 if(mat)
-output = struct('Z', Z, ...
-        'mu', mu, 'rn', rn, 'lambda', lambda,...
-        'rho', rho, 'nu', nu,  'Z_CL', Z_CL, ...
-        'Z_UL', Z_UL, 'mu_CI', mu_CI, ...
-        'rs_CI', lambda_CI, 'rn_CI', rn_CI);
+output = struct('Z', Z, 'Z_CL', Z_CL, 'Z_UL', Z_UL, ...
+        'mu', mu, 'mu_CI', mu_CI, ...
+        'rn', rn, 'rn_CI', rn_CI,...
+        'lambda', lambda, 'lambda_CI', lambda_CI, ...
+        'rho', rho, 'nu', nu);
 else
-    output = struct('Z', Z, ...
-        'mu', mu, 'rn', rn, 'lambda', lambda,...
-        'Z_CL', Z_CL,'Z_UL', Z_UL, 'mu_CI', mu_CI, ...
-        'rs_CI', lambda_CI, 'rn_CI', rn_CI);
+    output = struct('Z', Z, 'Z_CL', Z_CL, 'Z_UL', Z_UL, ...
+        'mu', mu, 'mu_CI', mu_CI, ...
+        'rn', rn, 'rn_CI', rn_CI,...
+        'lambda', lambda, 'lambda_CI', lambda_CI, ...
+        'Sigma_est', Sigma_est);
 end
 
 

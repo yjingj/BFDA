@@ -15,6 +15,8 @@
  % c: determine the prior for the functional mean
  % w: scale the variance for the prior of sigma_s^2
  % ws: scale the variance for the prior of rn
+ % resid_thin: thin-steps for saving residuals for goodness-of-fit test 
+ % tol: singular values < tol were set to 0 in pinv()
  
 %% Outputs a structure with elements
  % Z, Z_CL, Z_UL: Bayesian Signals Estimates (smoothed) on the pooled grid, and 95% credible intervals;
@@ -24,8 +26,12 @@
  % rn, rn_CI: Bayesian estimate of noise precision \gamma_{noise};
  % rs, rs_CI: Bayesian estimate of the scala in the scale matrix of IW distribution \sigma_s^2;
  % rho, nu: Only return if mat is true, empirical estimate of the spacial scale parameter and order parameter in Matern function, if not given in the param structure 
- 
-function [output] = bhm_mcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_est, pgrid, nu, c, w, ws, resid_thin)
+ % pmin_vec: pvalues of goodness-of-fit test per functional sample
+ % rho, nu: Empirical estimate of the spacial scale parameter and order parameter in Matern model
+ % Sigma_est: pre-smoothed covariance function used with nonstationary data
+
+
+function [output] = bhm_mcmc(Y, T, delta, cgrid, Burnin, M, mat, Sigma_est, mu_est, pgrid, nu, c, w, ws, resid_thin, tol)
 
  %%                   
 p = length(pgrid); % length of the pooled grid
@@ -36,7 +42,6 @@ P = cellfun(@length, Y); % # of observations for each signal
 J = ones(p, 1);
 D = abs(J * pgrid - pgrid' * J');
     
-
 %% construct matrix form of the raw signal data
 
 if  ~cgrid
@@ -130,7 +135,7 @@ Mu = repmat(mu0, 1, n);
 Z(isnan(Z)) = Mu(isnan(Z));
 
 iK = I;   % covariance matrix
-K = pinv(iK); % precision matrix
+K = pinv(iK, tol); % precision matrix
 
 
 %% assign memory ahead
@@ -168,15 +173,15 @@ for iter = 1 : (M + Burnin)
             s=svd(V3);
             if s(length(s)) < 0.0001
                 Z(Idx_rest{i}, i) = mu3;
-                iV2 = rn * eye(P(i)) + pinv(V11);
-                V2 = pinv(iV2); 
+                iV2 = rn * eye(P(i)) + pinv(V11, tol);
+                V2 = pinv(iV2, tol); 
                 mu2 = iV2 \ (rn * Y{i}' + (V11) \ mu(Idx{i}));
             else
                 L = mychol(V3);
                 Z(Idx_rest{i}, i) = mu3 + L * normrnd(0, 1, length(Idx_rest{i}), 1);                
                 B2 = B0'/ V3;
-                iV2 = rn * eye(P(i)) + pinv(V11) + B2 * B0;
-                V2 = pinv(iV2);
+                iV2 = rn * eye(P(i)) + pinv(V11, tol) + B2 * B0;
+                V2 = pinv(iV2, tol);
                 mu2 = iV2 \ (rn * Y{i}' + V11 \ mu(Idx{i}) + B2 * (B1 + Z(Idx_rest{i}, i)));
             end
             
@@ -185,7 +190,7 @@ for iter = 1 : (M + Burnin)
         end
     else    
          iZvar = (K + rn .* I);
-         Zvar = pinv(iZvar);
+         Zvar = pinv(iZvar, tol);
          Zmean = (iZvar) \ (rn .* Yfull + repmat(K * mu, 1, n)); 
          L = mychol(Zvar);
          Z = Zmean + L * normrnd(0, 1, p, n); 
@@ -291,16 +296,19 @@ rn_CI = [rn_sort(q1), rn_sort(q2)];
 
 %%
 if(mat)
-    output = struct('Z', Z, 'Sigma', iK, 'Sigma_SE', iKSE, ...
-        'mu', mu, 'rn', rn, 'rs', rs,'Z_CL', Z_CL, ...
-        'Z_UL', Z_UL, 'Sigma_CL', iK_CL, 'Sigma_UL', iK_UL, 'mu_CI', mu_CI, ...
-        'rs_CI', rs_CI, 'rn_CI', rn_CI, ...
-        'rho', rho, 'nu', nu, 'residuals', residuals, 'pmin_vec', pmin_vec);
+    output = struct('Z', Z, 'Z_CL', Z_CL, 'Z_UL', Z_UL, ...
+        'Sigma', iK, 'Sigma_CL', iK_CL, 'Sigma_UL', iK_UL, ...
+        'Sigma_SE', iKSE, 'mu', mu, 'mu_CI', mu_CI, ...
+        'rn', rn, 'rn_CI', rn_CI, 'rs', rs, 'rs_CI', rs_CI, ...
+        'pmin_vec', pmin_vec, ...
+        'rho', rho, 'nu', nu);
 else
-    output = struct('Z', Z, 'Sigma', iK, 'Sigma_SE', iKSE, ...
-        'mu', mu, 'rn', rn, 'rs', rs, 'Z_CL', Z_CL, ...
-        'Z_UL', Z_UL, 'Sigma_CL', iK_CL, 'Sigma_UL', iK_UL, 'mu_CI', mu_CI, ...
-        'rs_CI', rs_CI, 'rn_CI', rn_CI, 'residuals', residuals, 'pmin_vec', pmin_vec);
+    output = struct('Z', Z, 'Z_CL', Z_CL, 'Z_UL', Z_UL, ...
+        'Sigma', iK, 'Sigma_CL', iK_CL, 'Sigma_UL', iK_UL, ...
+        'Sigma_SE', iKSE, 'mu', mu, 'mu_CI', mu_CI, ...
+        'rn', rn, 'rn_CI', rn_CI, 'rs', rs, 'rs_CI', rs_CI, ...
+        'pmin_vec', pmin_vec, ...
+        'Sigma_est', Sigma_est);
 end
 
 display('BHM mcmc completed.');

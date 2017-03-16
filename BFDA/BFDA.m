@@ -35,7 +35,6 @@ function [ out_smooth, param ] = BFDA(Y, T, param)
     if strcmp(param.smethod, 'babf')
         if isempty(param.tau)
             param.tau = prctile(pgrid, 0:(100/(param.m-1)):100);
-            %linspace(param.trange(1), param.trange(2), param.m);
             % working grid
         end
     else
@@ -47,7 +46,7 @@ function [ out_smooth, param ] = BFDA(Y, T, param)
 if ~strcmp(param.smethod, 'css') && param.pace
     % By PACE 
     display('Run PACE to obtain pre-estimates for mean-covariance...')
-    param_pace = setOptions('regular',param.cgrid,'FVE_threshold',0.99,'corrPlot',0,'rho',-1);
+    param_pace = setOptions('regular',param.cgrid,'FVE_threshold',0.9999,'corrPlot',0,'rho',-1);
     pace_out = FPCA(Y, T, param_pace); 
     
     Phihat=getVal(pace_out,'phi');  % The estimated Eigenfunctions.
@@ -58,6 +57,7 @@ if ~strcmp(param.smethod, 'css') && param.pace
     Phi_tau = interp1(out1', Phihat, param.tau, 'spline');
     param.Sigma_est = Phi_tau * diag(lamhat) * Phi_tau'; % Make sure positive definite 
     param.mu_est = interp1(out1', pace_mu, param.tau, 'spline');
+    % Sigma_est = param.Sigma_est; mu_est = param.mu_est;
         
 elseif ~strcmp(param.smethod, 'css') && (isempty(param.Sigma_est) || isempty(param.mu_est) )
     % Run bspline smoothing on raw data and then calculate the pooled
@@ -91,19 +91,19 @@ end
       
       [out_smooth] = babf_mcmc(Y, T, param.delta, param.Burnin, param.M, param.mat, ...
           param.Sigma_est, param.mu_est, param.tau, ...
-          param.w, param.ws, param.c, param.nu, param.eval_grid, param.resid_thin);
+          param.w, param.ws, param.c, param.nu, param.eval_grid, param.resid_thin, param.tol);
       
   elseif strcmp(param.smethod, 'bhm')
       display('Smoothing and estimation of functional data by BHM...')
       [out_smooth] = bhm_mcmc(Y, T, param.delta, param.cgrid, param.Burnin, param.M, ...
                         param.mat, param.Sigma_est, param.mu_est, pgrid, param.nu, ...
-                        param.c, param.w, param.ws, param.resid_thin);
+                        param.c, param.w, param.ws, param.resid_thin, param.tol);
       
   elseif strcmp(param.smethod, 'bgp')
       display('Smoothing and estimation of functional data by BGP...')
     [out_smooth] = bgp(Y, T, param.Burnin, param.M, ...
                         param.mat, param.Sigma_est, param.mu_est,  ...
-                        param.c, param.w, param.ws, param.nu);
+                        param.c, param.w, param.ws, param.nu, param.tol);
                     
   elseif strcmp(param.smethod, 'bfpca')
       display('Smoothing and estimation of functional data by BFPCA...')
@@ -114,7 +114,7 @@ end
   elseif strcmp(param.smethod, 'css')
     % with BHM
     display('Smoothing and estimation of functional data by Cubic Smoothing Splines...')
-    [out_smooth] = css_gcv(Y, T, param.lamb_min, param.lamb_max, param.lamb_step, param.cgrid);
+    [out_smooth] = css_gcv(Y, T, param.lamb_min, param.lamb_max, param.lamb_step, param.eval_grid);
   else 
       display('param.smethod has to be one of: babf, bhm, bgp, bfpca, css. ')
     

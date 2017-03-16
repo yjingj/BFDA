@@ -7,35 +7,42 @@
  % delta: determins the degrees of freedom of IW is delta+p-1; usually use 5
  % Burnin, M : number of iterations for MCMC
  % mat: whether use Matern kernel in IWP
- % Sigma_est, mu_est, tau: mean/covariance estimate on grid tau
+ % Sigma_est, mu_est, tau: mean/covariance estimate on working grid tau
  % c: determine the prior for the mean function
- % p: length of tau (work grid)
  % w, ws: decide hyper gamma priors
  % nu: order of smoothness in the Matern function; usually use 2.5
  % eval_grid: the common grid that mean-covariance functions will be
  % evaluated on.
-
+ % resid_thin: thin-steps for saving residuals for goodness-of-fit test 
+ % tol: singular values < tol were set to 0 in pinv()
+ 
 %% Outputs a structure with elements
  % Zt: Bayesian Signals Estimates (smoothed) corresponding to Tcell, cell of 1 by n;
  % Zeta, Zeta_CL, Zeta_UL: Coefficients estimates, lower and upper 95% credible intervals;
- % Sigma_tau: Covariance matrix of functional data on working grid tau;
+ % mu_zeta, mu_zeta_CI: mean of basis function coefficients, and 95% credible intervals;
  % Sigma_zeta, Sigma_zeta_CL, Sigma_zeta_UL: Covariance matrix of basis function coefficients, lower and upper 95% credible intervals;
- % mu_tau: curve mean on working grid tau;
- % mu_zeta, nu_zeta_CI: mean of basis function coefficients, and 95% credible intervals;
+ % rn, rn_CI: \gamma_{noise}, noise precision, and 95% credible iterval;
+ % rs, rs_CI: \sigma_s^2, and 95% credible iterval;
  % Z_cgrid, Sigma_cgrid, mu_cgrid: signal, covariance, mean estiamtes on
  %                              the common eval_grid;
  % Z_cgrid_CL, Z_cgrid_UL, Sigma_cgrid_CL, Sigma_cgrid_UL, mu_cgrid_CI: 95% credible itervals;
- % rn, rn_CI: \gamma_{noise}, noise precision, and 95% credible iterval;
- % rs, rs_CI: \sigma_s^2, and 95% credible iterval;
- % rho, nu: if using matern covariance function
- % along with 95% credible intervals
+ % tau: working grid
+ % mu_tau: curve mean on working grid tau;
+ % Sigma_tau: Covariance matrix of functional data on working grid tau;
  % Btau, BT: basis function evaluations on tau and T.
  % optknots: selected optimal knots by optknt() for constructing cubic B-splines
+ % pmin_vec: pvalues of goodness-of-fit test per functional sample
+ % rho, nu: if matern covariance function was used
+ % Sigma_est: if pre-smoothed covariance function was used
 %% 
 
-function [output] = babf_mcmc(Y, T, delta, Burnin, M, mat, Sigma_est, mu_est, tau, w, ws, c, nu, eval_grid, resid_thin)
+
+function [output] = babf_mcmc(Y, T, delta, Burnin, M, mat, Sigma_est, mu_est, tau, w, ws, c, nu, eval_grid, resid_thin, tol)
+
+% delta=5; Burin = 200; M = 1000; mat = 1; w=1; ws = 1; c=1; resid_thin=10
 
 %% working grid tau
+% tau = param.tau;
 P = cellfun(@length, Y); % length of all observation grids
 n = size(Y, 2); % # of signals
 m = length(tau); % # of working grids
@@ -46,7 +53,7 @@ display(['eval_grid has length ', num2str(p_cgrid)]);
 
 %% MCMC sampling set up
 
-%delta = 5; c = 1; %Choose prior normal distribution for mean (arbitrarily)
+%Choose prior normal distribution for mean (arbitrarily)
 dm = delta + m - 1; %degrees of freedom for the inv-Wishart with delta
 dmp = n + delta + m; %degrees of freedom for the conditional posterior inv-Wishart with n+1+delta
 
@@ -133,15 +140,12 @@ rs = (trace(Sigma_est) - m * snhat2 ) / (trace(A) / (delta - 2));
 
 Zt = cell(1, n); 
 iK_tau = Sigma_est;
-
 sumsquare_func = @(x, y) sum((x - y).^2);
-
-
 
 % mean and covariance of coefficients zeta
 mu_zeta = Btau \ mu_est; % p X 1 dimension
 iK_zeta = (Btau \ iK_tau) / Btau'; % p by p dimension
-K_zeta = pinv(iK_zeta); 
+K_zeta = pinv(iK_zeta, tol); 
 
 Zeta = repmat(mu_zeta, 1, n);
 mu0_zeta = Btau \ mu0;
@@ -177,7 +181,7 @@ for iter = 1 : (M + Burnin)
     % update zeta/Z
         for i = 1:n
           
-           iK_zeta_i = pinv(BT{i}' * BT{i} * rn + K_zeta);
+           iK_zeta_i = pinv(BT{i}' * BT{i} * rn + K_zeta, tol);
            mu_zeta_i = iK_zeta_i * (BT{i}' * Y{i}' * rn + K_zeta * mu_zeta);
             
             Zeta(:, i) = mu_zeta_i + mychol(iK_zeta_i) * normrnd(0, 1, m, 1);
@@ -204,7 +208,7 @@ for iter = 1 : (M + Burnin)
     
      %update signal variance rs
      iK_tau = (Btau) * iK_zeta * (Btau') ;
-     K_tau = pinv(iK_tau) ;
+     K_tau = pinv(iK_tau, tol) ;
      rs = gamrnd(m * dm/2 + as, 1/(bs + trace(A * K_tau) / 2));  
 
     % Save all MCMC samples   
@@ -309,29 +313,34 @@ rn_CI = [rn_sort(q1), rn_sort(q2)];
 %% outputs
 
 if(mat)
-    output = struct('tau', tau, 'Zt', {Zt}, 'Sigma_tau', iK_tau, 'Sigma_zeta_SE', iK_zeta_SE, ...
-    'mu_tau', mu_tau, 'mu_zeta', mu_zeta, 'rn', rn, 'rs', rs,...
-    'rho', rho, 'nu', nu, 'Zeta_CL', Zeta_CL, ...
-    'Zeta_UL', Zeta_UL, 'Sigma_zeta_CL', iK_zeta_CL, ...
-    'Sigma_zeta_UL', iK_zeta_UL, 'mu_zeta_CI', mu_zeta_CI, ...
-    'Btau', Btau, 'BT', {BT}, 'Zeta', Zeta, 'Sigma_zeta', iK_zeta, ...
+    output = struct('Zt', {Zt}, 'Zeta', Zeta, 'Zeta_CL', Zeta_CL, 'Zeta_UL', Zeta_UL, ...
+    'Sigma_zeta', iK_zeta, 'Sigma_zeta_SE', iK_zeta_SE, ...
+    'mu_zeta', mu_zeta, 'mu_zeta_CI', mu_zeta_CI, ...
+    'Sigma_zeta_CL', iK_zeta_CL, 'Sigma_zeta_UL', iK_zeta_UL,...
+    'rn', rn, 'rn_CI', rn_CI, 'rs', rs, 'rs_CI', rs_CI, ...
     'Z_cgrid', Z_cgrid, 'Z_cgrid_CL', Z_cgrid_CL, 'Z_cgrid_UL', Z_cgrid_UL, ...
     'Sigma_cgrid', iK_cgrid, 'Sigma_cgrid_CL', iK_cgrid_CL, 'Sigma_cgrid_UL', iK_cgrid_UL,...
-    'mu_cgrid', mu_cgrid, 'mu_cgrid_CI', mu_cgrid_CI, ...
-    'rs_CI', rs_CI, 'rn_CI', rn_CI, 'optknots', optknots, ...
-    'residuals', {residuals}, 'pmin_vec', pmin_vec);
+    'mu_cgrid', mu_cgrid, 'mu_cgrid_CI', mu_cgrid_CI, 'eval_grid', eval_grid, ...
+    'tau', tau, 'mu_tau', mu_tau, 'Sigma_tau', iK_tau, ...
+    'optknots', optknots, 'Btau', Btau, 'BT', {BT}, ...
+    'pmin_vec', pmin_vec, ...
+    'rho', rho, 'nu', nu);
 else
-    output = struct('tau', tau, 'Zt', {Zt}, 'Sigma_tau', iK_tau, 'Sigma_zeta_SE', iK_zeta_SE, ...
-    'mu_tau', mu_tau, 'mu_zeta', mu_zeta, 'rn', rn, 'rs', rs,...
-    'Zeta_CL', Zeta_CL, ...
-    'Zeta_UL', Zeta_UL, 'Sigma_zeta_CL', iK_zeta_CL, ...
-    'Sigma_zeta_UL', iK_zeta_UL, 'mu_zeta_CI', mu_zeta_CI, ...
-    'Btau', Btau, 'BT', {BT}, 'Zeta', Zeta, 'Sigma_zeta', iK_zeta, ...
+    output = struct('Zt', {Zt}, 'Zeta', Zeta, 'Zeta_CL', Zeta_CL, 'Zeta_UL', Zeta_UL, ...
+    'Sigma_zeta', iK_zeta, 'Sigma_zeta_SE', iK_zeta_SE, ...
+    'mu_zeta', mu_zeta, 'mu_zeta_CI', mu_zeta_CI, ...
+    'Sigma_zeta_CL', iK_zeta_CL, 'Sigma_zeta_UL', iK_zeta_UL,...
+    'rn', rn, 'rn_CI', rn_CI, 'rs', rs, 'rs_CI', rs_CI, ...
     'Z_cgrid', Z_cgrid, 'Z_cgrid_CL', Z_cgrid_CL, 'Z_cgrid_UL', Z_cgrid_UL, ...
     'Sigma_cgrid', iK_cgrid, 'Sigma_cgrid_CL', iK_cgrid_CL, 'Sigma_cgrid_UL', iK_cgrid_UL,...
-    'mu_cgrid', mu_cgrid, 'mu_cgrid_CI', mu_cgrid_CI, ...
-    'rs_CI', rs_CI, 'rn_CI', rn_CI, 'optknots', optknots, 'residuals', {residuals}, 'pmin_vec', pmin_vec);
+    'mu_cgrid', mu_cgrid, 'mu_cgrid_CI', mu_cgrid_CI, 'eval_grid', eval_grid, ...
+    'tau', tau, 'mu_tau', mu_tau, 'Sigma_tau', iK_tau, ...
+    'optknots', optknots, 'Btau', Btau, 'BT', {BT}, ...
+    'pmin_vec', pmin_vec, ...
+    'Sigma_est', Sigma_est);
+
 end
+
 
 display('BABF mcmc completed.');
 

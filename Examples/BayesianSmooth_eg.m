@@ -24,7 +24,7 @@ s = sqrt(5); % Standard deviation of functional observations
 r = 2; % Signal to noise ratio
 rho = 1/2; % Scale parameter in the Matern function
 nu = 3.5; % Order parameter in the Matern function
-pgrid = (0 : (pi/2)/(p-1) : (pi/2)); % Pooled grid
+pgrid = (0.001 : (pi/2)/(p-1) : (pi/2)); % Pooled grid
 dense = 0.6; % Proportion of observations on the pooled grid
 au = 0; bu = pi/2; % Function domain 
 m = 20; % Number of working grid points
@@ -42,15 +42,15 @@ param = setOptions_bfda('smethod', 'bhm', 'cgrid', 1, 'mat', 1, ...
            'M', 10000, 'Burnin', 2000, 'w', 1, 'ws', 1);
 
 % run with Bayesian Functional PCA
-% param = setOptions_bfda('smethod', 'bfpca', 'M', 50, 'Burnin', 20);
+% param = setOptions_bfda('smethod', 'bfpca', 'M', 50, 'Burnin', 20, ...
+%			'a', 0.001, 'b', 0.001, 'w', 1);
 
 % run with standard Bayesian Gaussian Process model
 % param = setOptions_bfda('smethod', 'bgp', 'mat', 1, ...
 %           'M', 50, 'Burnin', 20);
 
 % run with Cubic Smoothing Splines
-% param = setOptions_bfda('smethod', 'css', 'mat', 1, 'M', ...
-%            50, 'Burnin', 20, 'pace', 0);
+% param = setOptions_bfda('smethod', 'css');
 
 % call BFDA
 [out_cgrid, param] = ...
@@ -116,8 +116,7 @@ title('Estimated functional covariance')
 GausFD_rgrid = sim_gfd_rgrid(n, p, au, bu, s, r, nu, rho, stat);
 
 param_rgrid = setOptions_bfda('smethod', 'babf', 'cgrid', 0, 'mat', 1, ...
-    'M', 10000, 'Burnin', 2000, 'm', m, 'eval_grid', pgrid, 'ws', 1, ...
-    'trange', [au, bu]);
+    'M', 10000, 'Burnin', 2000, 'm', m, 'eval_grid', pgrid, 'ws', 1);
 
 % call BFDA
 [out_rgrid, param_rgrid]= ...
@@ -134,8 +133,7 @@ title('Estimated functional covariance')
 GausFD_rgrid_ns = sim_gfd_rgrid(n, m, au, bu, s, r, nu, rho, 0);
 
 param_rgrid_ns = setOptions_bfda('smethod', 'babf', 'cgrid', 0, 'mat', ...
-    0, 'M', 10000, 'Burnin', 2000, 'm', m, 'eval_grid', pgrid, 'ws', 0.05, ...
-    'trange', [au, bu]);
+    0, 'M', 10000, 'Burnin', 2000, 'm', m, 'eval_grid', pgrid, 'ws', 0.05);
 
 % call BFDA
 [out_rgrid_ns, param_rgrid_ns] = ...
@@ -147,6 +145,22 @@ title('Smoothed functional data')
 figure()
 plot(out_rgrid_ns.Sigma_cgrid)
 title('Estimated functional covariance')
+
+%% Coverage probability
+Xtrue_mat = reshape(cell2mat(GausFD_cgrid.Xtrue_cell), p, n);
+
+Covprob(Xtrue_mat, out_cgrid.Z_CL, out_cgrid.Z_UL, 2)
+Covprob(GausFD_cgrid.Cov_true, out_cgrid.Sigma_CL, out_cgrid.Sigma_UL, 2)
+Covprob(GausFD_cgrid.Mean_true', out_cgrid.mu_CI(:, 1), out_cgrid.mu_CI(:, 2), 1)
+
+Covprob(GausFD_ucgrid.Cov_true, out_ucgrid.Sigma_CL, out_ucgrid.Sigma_UL, 2)
+Covprob(GausFD_ucgrid.Mean_true', out_ucgrid.mu_CI(:, 1), out_ucgrid.mu_CI(:, 2), 1)
+
+Xtrue_mat_ns = reshape(cell2mat(GausFD_cgrid_ns.Xtrue_cell), p, n);
+
+Covprob(Xtrue_mat_ns, out_cgrid_ns.Z_CL, out_cgrid_ns.Z_UL, 2)
+Covprob(GausFD_cgrid_ns.Cov_true, out_cgrid_ns.Sigma_CL, out_cgrid_ns.Sigma_UL, 2)
+Covprob(GausFD_cgrid_ns.Mean_true', out_cgrid_ns.mu_CI(:, 1), out_cgrid_ns.mu_CI(:, 2), 1)
 
 
 %% Calculate RMSE (root mean square error)

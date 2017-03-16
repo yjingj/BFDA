@@ -6,15 +6,15 @@
  % T: 1 by n cell array with common grids;
  % Burnin, M : number of iterations for MCMC
  % Sigma_est: empirical covariance estimate
- % a, b, w : determin shape, scale parameters for IG of lambda
- % w : determin shape, scale parameters for IG of noise variance
+ % a, b, w: determin shape, scale parameters for IG of lambda
  
  %% Outputs a structure with elements
  % Z: smoothes signals
- % Zeta: Bayesian Estimates for the PC coefficients, K by n;
+
+ % Zeta, Zeta_CL, Zeta_UL: Bayesian Estimates and 95% credible intervals for the PC coefficients, K by n;
+ % rn, rn_CI, lambda, lambda_CI: Bayesian estimates and 95% credible intervals of the noise precision, PC coefficient precisions;
  % mu: sample estimate, p by 1;
- % rn, lambda: Bayesian estimate of the precisions of noise, PC coefficients;
- % along with 95% credible intervals for all Bayesian estimates
+ % Sigma_est: covariance estimate;
 
 %% 
 function [output] = bfpca(Y, T, Burnin, M, Sigma_est, a, b, w)
@@ -31,7 +31,7 @@ n = size(Y, 2); % # of signals
 Ymat = reshape(cell2mat(Y), [p, n]); % noisy signal data
 
 
-%% PCA with regard to Sigma_est
+%% PCA of Sigma_est
 
 [V, E] = eig(Sigma_est);
 eig_val = diag(E);
@@ -122,11 +122,10 @@ rn_CI = [rn_sort(q1), rn_sort(q2)];
 
 
 %%
-output = struct('Z', Z, 'Zeta', Zeta,  ...
-        'lambda', lambda, 'mu', mu, 'rn', rn, ...
-        'Sigma_est', Sigma_est, 'Zeta_CL', Zeta_CL, ...
-        'Zeta_UL', Zeta_UL, 'lambda_CI', lambda_CI, ...
-        'rn_CI', rn_CI);
+output = struct('Z', Z, 'Zeta', Zeta, 'Zeta_CL', Zeta_CL, 'Zeta_UL', Zeta_UL, ...
+        'rn', rn, 'rn_CI', rn_CI, ...
+        'lambda', lambda, 'lambda_CI', lambda_CI, ...
+        'mu', mu, 'Sigma_est', Sigma_est);
     
 display('BFPCA completed.');
 

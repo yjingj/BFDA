@@ -2,16 +2,19 @@
 % by GCV, among lambda_vec = (lamb_min : lamb_step : lamb_max)
 
 %% Input
-% Y_cgrid, response cells
-% T_cgrid, common grid cells
-% SS_lamb_min, min smoothing parameter value = 0.99;
-% SS_lamb_step, step of smoothing parameter value;
-% SS_lamb_max, max smoothing parameter value = 0.999;
-%% Output
-% Ycsp_opt: smoothed signal matrix p by n.
+% Y_cgrid, response cell
+% T_cgrid, common grid cell
+% lamb_min, min smoothing parameter value = 0.99;
+% lamb_step, step of smoothing parameter value;
+% lamb_max, max smoothing parameter value = 0.999;
+% eval_grid, evaluation grid
 
+%% Output
+% Ycsp_cell: smoothed signal cell 
+% Ycsp_cgrid: smoothed signals on the eval_grid
 %%
-function [output] = css_gcv(Y_cgrid, T_cgrid, lamb_min, lamb_max, lamb_step, cgrid)
+
+function [output] = css_gcv(Y_cgrid, T_cgrid, lamb_min, lamb_max, lamb_step, eval_grid)
 
 lambda_vec = lamb_min : lamb_step : lamb_max;
 
@@ -21,7 +24,7 @@ SS_n = size(Y_cgrid, 2); % total number of curves
 
 % using data of common grid, convert to p by n matrix
 Ycsp_cell = cell(1, SS_n);
-Ycsp_cgrid = zeros(length(cgrid), SS_n);
+Ycsp_cgrid = zeros(length(eval_grid), SS_n);
 
 for i = 1:SS_n
     t0 = T_cgrid{i};
@@ -42,7 +45,7 @@ for i = 1:SS_n
     [min_rmse, opt_k] = min(error_rmse);
     lambda_opt = lambda_vec(opt_k);
     Ycsp_cell{i} = csaps(t0, Y_cgrid{i}, lambda_opt, t0);
-    Ycsp_cgrid(:, i) = csaps(t0, Y_cgrid{i}, lambda_opt, cgrid);
+    Ycsp_cgrid(:, i) = csaps(t0, Y_cgrid{i}, lambda_opt, eval_grid);
 end
 
 output = struct('Ycsp_cell', {Ycsp_cell}, 'Ycsp_cgrid', Ycsp_cgrid);
