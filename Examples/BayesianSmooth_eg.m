@@ -8,14 +8,14 @@ reset(stream);  % set up a seed for simulation
 %% Add pathes of the required MATLAB packages 
 % BFDA, bspline, fdaM, mcmcdiag, PACE
 % replace pwd by the directory of your MATLAB packages
-addpath(genpath(cat(2, pwd, '/BFDA')))
+addpath(genpath(cat(2, pwd, '/BFDA_SourceCode')))
 addpath(genpath(cat(2, pwd, '/bspline')))
 addpath(genpath(cat(2, pwd, '/fdaM'))) 
 addpath(genpath(cat(2, pwd, '/mcmcdiag'))) 
 addpath(genpath(cat(2, pwd, '/PACErelease2.11')))  
 
- load('./Examples/Data/Simu_Data.mat')
- load('./Examples/Data/Simu_Output.mat')
+load('./Examples/Data/Simu_Data.mat')
+load('./Examples/Data/Simu_Output.mat')
 
 %% Set up parameters for simulation
 n = 30; % Number of functional samples
@@ -34,7 +34,7 @@ cgrid = 1; % Specify common observation grid
 %% Analyzing stationary functional data with common grid
 % Generate simulated data from GP(3sin(4t), s^2 Matern_cor(d; rho, nu)) 
 % with noises from N(0, (s/r)^2)
-% GausFD_cgrid = sim_gfd(pgrid, n, s, r, nu, rho, dense, cgrid, stat);
+GausFD_cgrid = sim_gfd(pgrid, n, s, r, nu, rho, dense, cgrid, stat);
 
 % setup parameters for BFDA
 % run with BHM
