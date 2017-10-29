@@ -7,9 +7,6 @@ load('./Examples/Data/Simu_Data.mat')
 load('./Examples/Data/Simu_Output.mat')
 
 %%
-n=30; p = 40; 
-pgrid = (0 : (pi/2)/(p-1) : (pi/2));
-eval_grid = (0 : (pi/2)/(p-1) : (pi/2));
 [xgrid,ygrid] = meshgrid(eval_grid); % 3D plots of the covariance matrices
 
 clims = [0, 1];
@@ -119,7 +116,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-%%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/BFDA_ManuscriptR1/Figures/stat_sig'))
+%%print(h, '-dpdf', cat(2, getenv('HOME'), '/Figures/stat_sig'))
 
 %% plot covariance 
 
@@ -156,7 +153,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/BFDA_ManuscriptR1/Figures/stat_cov'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Figures/stat_cov'))
 
 
 %% set up data for Nonstationary-cgrid-ucgrid plot
@@ -262,7 +259,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/BFDA_ManuscriptR1/Figures/non_stat_sig'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Figures/non_stat_sig'))
 
 %%
 zlims = [-1, 35];
@@ -298,7 +295,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/BFDA_ManuscriptR1/Figures/non_stat_cov'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Figures/non_stat_cov'))
 
 
 %% Setup data for random grids case
@@ -390,7 +387,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/BFDA_ManuscriptR1/Figures/rand_sig'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Figures/rand_sig'))
 
 %%
 zlims = [-1, 25];
@@ -426,7 +423,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/BFDA_ManuscriptR1/Figures/rand_cov'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Figures/rand_cov'))
 
 
 

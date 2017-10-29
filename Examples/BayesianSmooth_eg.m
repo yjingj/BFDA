@@ -115,8 +115,11 @@ title('Estimated functional covariance')
 %% Analyzing stationary functional data with random grids
 GausFD_rgrid = sim_gfd_rgrid(n, p, au, bu, s, r, nu, rho, stat);
 
+eval_grid = prctile(sort(unique(cell2mat(GausFD_rgrid.Tcell))), ...
+                    1:(100/p):100);
+
 param_rgrid = setOptions_bfda('smethod', 'babf', 'cgrid', 0, 'mat', 1, ...
-    'M', 10000, 'Burnin', 2000, 'm', m, 'eval_grid', pgrid, 'ws', 1);
+    'M', 10000, 'Burnin', 2000, 'm', m, 'eval_grid', eval_grid, 'ws', 1);
 
 % call BFDA
 [out_rgrid, param_rgrid]= ...
@@ -132,8 +135,12 @@ title('Estimated functional covariance')
 %% Analyzing nonstationary functional data with random grids
 GausFD_rgrid_ns = sim_gfd_rgrid(n, m, au, bu, s, r, nu, rho, 0);
 
+eval_grid_ns = prctile(sort(unique(cell2mat(GausFD_rgrid_ns.Tcell))), ...
+                    1:(100/p):100);
+
 param_rgrid_ns = setOptions_bfda('smethod', 'babf', 'cgrid', 0, 'mat', ...
-    0, 'M', 10000, 'Burnin', 2000, 'm', m, 'eval_grid', pgrid, 'ws', 0.05);
+    0, 'M', 10000, 'Burnin', 2000, 'm', m, 'eval_grid', ...
+    eval_grid_ns, 'ws', 0.05);
 
 % call BFDA
 [out_rgrid_ns, param_rgrid_ns] = ...
@@ -147,7 +154,8 @@ plot(out_rgrid_ns.Sigma_cgrid)
 title('Estimated functional covariance')
 
 %% Coverage probability
-Xtrue_mat = reshape(cell2mat(GausFD_cgrid.Xtrue_cell), p, n);
+Xtrue_mat = reshape(cell2mat(GausFD_cgrid.Xtrue_cell), ...
+    size(GausFD_cgrid.Xtrue_cell{1}, 2), size(GausFD_cgrid.Xtrue_cell, 2));
 
 Covprob(Xtrue_mat, out_cgrid.Z_CL, out_cgrid.Z_UL, 2)
 Covprob(GausFD_cgrid.Cov_true, out_cgrid.Sigma_CL, out_cgrid.Sigma_UL, 2)
@@ -156,7 +164,8 @@ Covprob(GausFD_cgrid.Mean_true', out_cgrid.mu_CI(:, 1), out_cgrid.mu_CI(:, 2), 1
 Covprob(GausFD_ucgrid.Cov_true, out_ucgrid.Sigma_CL, out_ucgrid.Sigma_UL, 2)
 Covprob(GausFD_ucgrid.Mean_true', out_ucgrid.mu_CI(:, 1), out_ucgrid.mu_CI(:, 2), 1)
 
-Xtrue_mat_ns = reshape(cell2mat(GausFD_cgrid_ns.Xtrue_cell), p, n);
+Xtrue_mat_ns = reshape(cell2mat(GausFD_cgrid_ns.Xtrue_cell),...
+    size(GausFD_cgrid_ns.Xtrue_cell{1}, 2), size(GausFD_cgrid_ns.Xtrue_cell, 2));
 
 Covprob(Xtrue_mat_ns, out_cgrid_ns.Z_CL, out_cgrid_ns.Z_UL, 2)
 Covprob(GausFD_cgrid_ns.Cov_true, out_cgrid_ns.Sigma_CL, out_cgrid_ns.Sigma_UL, 2)
@@ -168,7 +177,8 @@ display('RMSE of the estimated stationary covariance')
 rmse(out_cgrid.Sigma_SE, GausFD_cgrid.Cov_true)
 
 display('RMSE of the estimated functional data')
-Xtrue_mat = reshape(cell2mat(GausFD_cgrid.Xtrue_cell), p, n);
+Xtrue_mat = reshape(cell2mat(GausFD_cgrid.Xtrue_cell), ...
+    size(GausFD_cgrid.Xtrue_cell{1}, 2), size(GausFD_cgrid.Xtrue_cell, 2));
 rmse(out_cgrid.Z, Xtrue_mat)
 
 % calculate the true non-stationary covariance matrix
@@ -179,13 +189,14 @@ rmse(out_cgrid_ns.Sigma_SE, Ctrue_ns)
 %% Save simulated data sets and BFDA results
 save('./Examples/Data/Simu_Data.mat', 'GausFD_cgrid', 'GausFD_ucgrid', ...
                            'GausFD_cgrid_ns', 'GausFD_ucgrid_ns', ...
-                           'GausFD_rgrid', 'GausFD_rgrid_ns')
+                           'GausFD_rgrid', 'GausFD_rgrid_ns', 'p', ...
+                           'eval_grid', 'eval_grid_ns', 'pgrid', 'n')
 
 save('./Examples/Data/Simu_Output.mat', 'out_cgrid', 'out_ucgrid', ...
                            'out_cgrid_ns', 'out_ucgrid_ns', ...
                            'out_rgrid', 'out_rgrid_ns')
                        
 %% Make plots by calling plot_script_smooth.m
-close all;
-run('./Examples/plot_script_smooth.m');
+%close all;
+%run('./Examples/plot_script_smooth.m');
 

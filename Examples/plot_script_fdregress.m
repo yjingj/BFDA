@@ -25,7 +25,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/BFDA_ManuscriptR1/Figures/reg_sample_curve'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Figures/reg_sample_curve'))
 
 
 %%  plot the fit with scalar repsonses
@@ -47,7 +47,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/BFDA_ManuscriptR1/Figures/reg_vecy_fitted'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Figures/reg_vecy_fitted'))
 
 %%  plot the temperature coefficient function with scalar responses
 h = figure('DefaultLegendFontSize',20,'DefaultLegendFontSizeMode','manual');
@@ -73,7 +73,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/BFDA_ManuscriptR1/Figures/reg_vecy_beta'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Figures/reg_vecy_beta'))
 
 %% plot predict responses with scalar responses
 
@@ -95,7 +95,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/BFDA_ManuscriptR1/Figures/reg_vecy_pred'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Figures/reg_vecy_pred'))
 
 %% Plot fitted output with functional responses
 h=figure('DefaultLegendFontSize',20,'DefaultLegendFontSizeMode','manual');
@@ -119,7 +119,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/BFDA_ManuscriptR1/Figures/reg_fdy_fitted'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Figures/reg_fdy_fitted'))
 
 %% plot intercept function with functional responses
 h = figure('DefaultLegendFontSize',18,'DefaultLegendFontSizeMode','manual');
@@ -139,7 +139,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/BFDA_ManuscriptR1/Figures/reg_fdy_intercept'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Figures/reg_fdy_intercept'))
 
 %%  plot the temperature coefficient function with functional responses
 h = figure('DefaultLegendFontSize',20,'DefaultLegendFontSizeMode','manual');
@@ -165,7 +165,7 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/BFDA_ManuscriptR1/Figures/reg_fdy_beta'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Figures/reg_fdy_beta'))
 
 %% plot predict responses with functional responses
 h=figure('DefaultLegendFontSize',20,'DefaultLegendFontSizeMode','manual');
@@ -184,5 +184,5 @@ set(h, 'PaperOrientation','landscape');
 set(h, 'PaperUnits','normalized');
 set(h, 'PaperPosition', [0 0 1.02 1]);
 
-%print(h, '-dpdf', cat(2, getenv('HOME'), '/Dropbox/FDA_Bayesian/BFDA_ManuscriptR1/Figures/reg_fdy_pred'))
+%print(h, '-dpdf', cat(2, getenv('HOME'), '/Figures/reg_fdy_pred'))
 

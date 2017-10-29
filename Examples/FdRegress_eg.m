@@ -2,7 +2,7 @@
 
 %% Add fdaM path and load the functional data
 addpath(genpath(cat(2, pwd, '/fdaM'))) % replace pwd by the directory of your MATLAB package
-addpath(genpath(cat(2, pwd, '/BFDA')))
+addpath(genpath(cat(2, pwd, '/BFDA_SourceCode')))
 
 load('./Examples/Data/Simu_Data.mat')
 load('./Examples/Data/Simu_Output.mat')
@@ -297,5 +297,5 @@ display(['Functional responses prediction mse = ', ...
     num2str(mse(ymat_test_true, ymat_test_pred_raw))])
 
 %% Use plot_script_fdregress.m to make plots
-close all;
+%close all;
 %run('./Examples/plot_script_fdregress.m');
