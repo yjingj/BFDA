@@ -3,7 +3,7 @@ BFDA Matlab Toolbox
 ===================
 
 ## Matlab toolbox for Bayesian functional data analysis using Gaussian-Wishart processes
-Tested for Matlab 2014 or later
+Developed for Matlab 2014 or later
 
 ### Required existing MATLAB packages for using this toolbox (included)
 
