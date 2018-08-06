@@ -34,7 +34,7 @@ function [ out_smooth, param ] = BFDA(Y, T, param)
 
     if strcmp(param.smethod, 'babf')
         if isempty(param.tau)
-            param.tau = prctile(pgrid, 1:(100/(param.m-1)):100);
+            param.tau = prctile(pgrid, 0:(100/(param.m-1)):100);
             % working grid
         end
     else
